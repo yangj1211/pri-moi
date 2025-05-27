@@ -11,9 +11,9 @@ const WorkflowDiagram: React.FC = () => {
     { id: 'audio-parse', label: '音频解析节点', x: 200, y: 200, color: 'bg-orange-100 border-orange-300 text-orange-800' },
     { id: 'video-parse', label: '视频解析节点', x: 200, y: 240, color: 'bg-pink-100 border-pink-300 text-pink-800' },
     { id: 'python-custom', label: 'Python自定义节点', x: 350, y: 200, color: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
-    { id: 'clean', label: '数据清洗', x: 500, y: 200, color: 'bg-purple-100 border-purple-300 text-purple-800' },
-    { id: 'enhance', label: '数据增强', x: 650, y: 200, color: 'bg-orange-100 border-orange-300 text-orange-800' },
-    { id: 'end', label: '结束节点', x: 800, y: 200, color: 'bg-gray-100 border-gray-300 text-gray-600' }
+    { id: 'clean', label: '数据清洗', x: 500, y: 200, color: 'bg-indigo-100 border-indigo-300 text-indigo-800' },
+    { id: 'enhance', label: '数据增强', x: 650, y: 200, color: 'bg-teal-100 border-teal-300 text-teal-800' },
+    { id: 'end', label: '结束节点', x: 800, y: 200, color: 'bg-green-100 border-green-300 text-green-800' }
   ];
 
   const connections = [
@@ -118,11 +118,11 @@ const WorkflowDiagram: React.FC = () => {
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-purple-100 border border-purple-300 rounded"></div>
-            <span>图片解析/数据清洗</span>
+            <span>图片解析</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-orange-100 border border-orange-300 rounded"></div>
-            <span>音频解析/数据增强</span>
+            <span>音频解析</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-pink-100 border border-pink-300 rounded"></div>
@@ -131,6 +131,14 @@ const WorkflowDiagram: React.FC = () => {
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
             <span>Python自定义</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-indigo-100 border border-indigo-300 rounded"></div>
+            <span>数据清洗</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-teal-100 border border-teal-300 rounded"></div>
+            <span>数据增强</span>
           </div>
         </div>
       </div>
