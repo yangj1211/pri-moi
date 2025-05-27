@@ -301,7 +301,7 @@ const ExecutionDetails: React.FC = () => {
         '数据清洗': { 
           status: 'processing', 
           result: '正在进行数据清洗...', 
-          duration: '进行中(2分30秒)',
+          duration: '进行中(2min30s)',
           startTime: '2024-08-19 14:53:28',
           endTime: '',
           details: '处理中',
