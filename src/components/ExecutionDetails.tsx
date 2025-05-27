@@ -63,6 +63,35 @@ const ExecutionDetails: React.FC = () => {
     }
   };
 
+  // 计算文件处理进度
+  const getFileProgress = (file: FileProcessingData) => {
+    const nodeNames = Object.keys(file.nodeProcessing);
+    const totalNodes = nodeNames.length;
+    
+    // 计算已完成的节点数量
+    let completedNodes = 0;
+    let currentNodeIndex = 0;
+    
+    nodeNames.forEach((nodeName, index) => {
+      const nodeData = file.nodeProcessing[nodeName];
+      if (nodeData.status === 'completed') {
+        completedNodes++;
+      } else if (nodeData.status === 'processing' && currentNodeIndex === 0) {
+        currentNodeIndex = index + 1; // 当前正在处理的节点位置
+      }
+    });
+    
+    // 如果有正在处理的节点，当前进度就是正在处理的节点位置
+    // 如果没有正在处理的节点，进度就是已完成的节点数
+    const currentProgress = currentNodeIndex > 0 ? currentNodeIndex : completedNodes;
+    
+    return {
+      current: currentProgress,
+      total: totalNodes,
+      progressText: `(${currentProgress}/${totalNodes})`
+    };
+  };
+
   // 文件处理数据 - 扩展原有表格数据，添加处理结果
   const tableData: FileProcessingData[] = [
     {
@@ -839,6 +868,7 @@ const ExecutionDetails: React.FC = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {tableData.map((file, index) => {
               const row = getDisplayData(file);
+              const progress = getFileProgress(file);
               return (
               <React.Fragment key={file.fileId}>
                 <tr className="hover:bg-gray-50">
@@ -849,6 +879,9 @@ const ExecutionDetails: React.FC = () => {
                     <span className={`${row.statusColor} flex items-center`}>
                       <span className="mr-1">{row.statusIcon}</span>
                       {row.status}
+                      <span className="text-xs text-gray-500 ml-2">
+                        {progress.progressText}
+                      </span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
