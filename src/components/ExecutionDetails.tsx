@@ -70,25 +70,18 @@ const ExecutionDetails: React.FC = () => {
     
     // 计算已完成的节点数量
     let completedNodes = 0;
-    let currentNodeIndex = 0;
     
-    nodeNames.forEach((nodeName, index) => {
+    nodeNames.forEach((nodeName) => {
       const nodeData = file.nodeProcessing[nodeName];
       if (nodeData.status === 'completed') {
         completedNodes++;
-      } else if (nodeData.status === 'processing' && currentNodeIndex === 0) {
-        currentNodeIndex = index + 1; // 当前正在处理的节点位置
       }
     });
     
-    // 如果有正在处理的节点，当前进度就是正在处理的节点位置
-    // 如果没有正在处理的节点，进度就是已完成的节点数
-    const currentProgress = currentNodeIndex > 0 ? currentNodeIndex : completedNodes;
-    
     return {
-      current: currentProgress,
+      current: completedNodes,
       total: totalNodes,
-      progressText: `(${currentProgress}/${totalNodes})`
+      progressText: `(${completedNodes}/${totalNodes})`
     };
   };
 
@@ -103,12 +96,43 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始图片: 1920x1080像素，包含评分网页面截图',
       nodeProcessing: {
+        'Python预处理节点': { 
+          status: 'completed', 
+          result: 'Python预处理脚本执行成功', 
+          duration: '18s',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:42',
+          details: '文件预处理完成',
+          outputSize: '2.8KB',
+          hasOutput: true,
+          outputType: 'preprocessing',
+          outputPreview: JSON.stringify({
+            "file_validation": {
+              "format_check": "jpg - valid",
+              "size_check": "2.5MB - within limits",
+              "corruption_check": "passed",
+              "metadata_extraction": "completed"
+            },
+            "preprocessing_results": {
+              "encoding_detection": "binary",
+              "structure_analysis": "image file structure valid",
+              "quality_assessment": "high quality image",
+              "preprocessing_filters": ["format_validation", "size_optimization"]
+            },
+            "python_script_output": "文件预处理完成，准备进行解析",
+            "processing_metadata": {
+              "script_version": "v1.0.0",
+              "execution_time": "18.2s",
+              "memory_usage": "95MB"
+            }
+          }, null, 2)
+        },
         '图片解析节点': { 
           status: 'completed', 
           result: '解析成功，提取图片元数据', 
           duration: '14s',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
+          startTime: '2024-08-19 14:52:42',
+          endTime: '2024-08-19 14:52:56',
           details: '解析完成',
           outputSize: '2KB',
           hasOutput: true,
@@ -144,8 +168,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '25s',
-          startTime: '2024-08-19 14:52:38',
-          endTime: '2024-08-19 14:53:03',
+          startTime: '2024-08-19 14:52:56',
+          endTime: '2024-08-19 14:53:21',
           details: '自定义处理完成',
           outputSize: '3.2KB',
           hasOutput: true,
@@ -172,8 +196,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据清洗完成', 
           duration: '30s',
-          startTime: '2024-08-19 14:53:03',
-          endTime: '2024-08-19 14:53:33',
+          startTime: '2024-08-19 14:53:21',
+          endTime: '2024-08-19 14:53:51',
           details: '清洗完成',
           outputSize: '1.8KB',
           hasOutput: true,
@@ -209,8 +233,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据增强完成', 
           duration: '15s',
-          startTime: '2024-08-19 14:53:33',
-          endTime: '2024-08-19 14:53:48',
+          startTime: '2024-08-19 14:53:51',
+          endTime: '2024-08-19 14:54:06',
           details: '增强完成',
           outputSize: '3.2KB',
           hasOutput: true,
@@ -253,12 +277,43 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据清洗',
       originalContent: '原始文档内容: 包含评分网站分析报告，共5页内容',
       nodeProcessing: {
+        'Python预处理节点': { 
+          status: 'completed', 
+          result: 'Python预处理脚本执行成功', 
+          duration: '22s',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:46',
+          details: '文件预处理完成',
+          outputSize: '3.5KB',
+          hasOutput: true,
+          outputType: 'preprocessing',
+          outputPreview: JSON.stringify({
+            "file_validation": {
+              "format_check": "docx - valid",
+              "size_check": "1.2MB - within limits",
+              "corruption_check": "passed",
+              "encoding_detection": "UTF-8"
+            },
+            "preprocessing_results": {
+              "structure_analysis": "document structure valid",
+              "content_extraction": "text and images detected",
+              "quality_assessment": "good quality document",
+              "preprocessing_filters": ["format_validation", "encoding_check", "structure_analysis"]
+            },
+            "python_script_output": "文档预处理完成，准备进行文本解析",
+            "processing_metadata": {
+              "script_version": "v1.0.0",
+              "execution_time": "22.1s",
+              "memory_usage": "112MB"
+            }
+          }, null, 2)
+        },
         '文本解析节点': { 
           status: 'completed', 
           result: '解析成功，提取文本内容', 
           duration: '29s',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:53',
+          startTime: '2024-08-19 14:52:46',
+          endTime: '2024-08-19 14:53:15',
           details: '解析完成',
           outputSize: '15KB',
           hasOutput: true,
@@ -299,8 +354,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '35s',
-          startTime: '2024-08-19 14:52:53',
-          endTime: '2024-08-19 14:53:28',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:50',
           details: '自定义处理完成',
           outputSize: '8KB',
           hasOutput: true,
@@ -331,7 +386,7 @@ const ExecutionDetails: React.FC = () => {
           status: 'processing', 
           result: '正在进行数据清洗...', 
           duration: '进行中(2min30s)',
-          startTime: '2024-08-19 14:53:28',
+          startTime: '2024-08-19 14:53:50',
           endTime: '',
           details: '处理中',
           outputSize: '',
@@ -358,20 +413,31 @@ const ExecutionDetails: React.FC = () => {
       fileType: 'txt',
       fileSize: '500KB',
       overallStatus: '处理失败',
-      currentNode: '文本解析节点',
+      currentNode: 'Python自定义节点',
       originalContent: '原始文件: 编码格式错误，无法正常读取内容',
       nodeProcessing: {
-        '文本解析节点': { 
+        'Python预处理节点': { 
           status: 'failed', 
-          result: '解析失败', 
+          result: 'Python预处理脚本执行失败', 
           duration: '4s',
           startTime: '2024-08-19 14:52:24',
           endTime: '2024-08-19 14:52:28',
-          details: '解析失败',
+          details: '预处理失败',
           outputSize: '',
           hasOutput: true,
           outputType: 'error',
-          outputPreview: 'Error: UnicodeDecodeError\n无法解码文件内容\n检测到的编码: unknown\n文件大小: 500KB\n错误位置: 第3行，第127个字符\n建议: 请检查文件编码格式或重新保存文件为UTF-8格式\n\n常见解决方案:\n1. 使用记事本打开文件，另存为UTF-8编码\n2. 检查文件是否包含特殊字符\n3. 联系管理员获取技术支持'
+          outputPreview: 'Error: FileProcessingError\n文件预处理失败\n检测到的编码: unknown\n文件大小: 500KB\n错误位置: 文件头部\n错误详情: 无法识别文件编码格式\n\nPython脚本错误:\n  File "/scripts/preprocess.py", line 45, in validate_file\n    content = file.read().decode("utf-8")\nUnicodeDecodeError: \'utf-8\' codec can\'t decode byte 0xff in position 0\n\n建议解决方案:\n1. 检查文件编码格式\n2. 使用文本编辑器重新保存为UTF-8格式\n3. 联系管理员获取技术支持'
+        },
+        '文本解析节点': { 
+          status: 'skipped', 
+          result: '跳过处理', 
+          duration: '-',
+          startTime: '',
+          endTime: '',
+          details: '已跳过',
+          outputSize: '',
+          hasOutput: false,
+          outputType: 'skipped'
         },
         'Python自定义节点': { 
           status: 'skipped', 
@@ -417,12 +483,44 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始音频: 时长2分钟，包含评分网站背景音乐',
       nodeProcessing: {
+        'Python预处理节点': { 
+          status: 'completed', 
+          result: 'Python预处理脚本执行成功', 
+          duration: '14s',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:38',
+          details: '文件预处理完成',
+          outputSize: '2.1KB',
+          hasOutput: true,
+          outputType: 'preprocessing',
+          outputPreview: JSON.stringify({
+            "file_validation": {
+              "format_check": "mp3 - valid",
+              "size_check": "2.5MB - within limits",
+              "corruption_check": "passed",
+              "audio_integrity": "verified"
+            },
+            "preprocessing_results": {
+              "encoding_detection": "MP3 Layer III",
+              "bitrate_analysis": "320 kbps",
+              "duration_check": "2:00 minutes",
+              "quality_assessment": "high quality audio",
+              "preprocessing_filters": ["format_validation", "audio_analysis"]
+            },
+            "python_script_output": "音频文件预处理完成，准备进行解析",
+            "processing_metadata": {
+              "script_version": "v1.0.0",
+              "execution_time": "14.2s",
+              "memory_usage": "85MB"
+            }
+          }, null, 2)
+        },
         '音频解析节点': { 
           status: 'completed', 
           result: '解析成功，提取音频元数据', 
           duration: '14s',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
+          startTime: '2024-08-19 14:52:38',
+          endTime: '2024-08-19 14:52:52',
           details: '解析完成',
           outputSize: '2KB',
           hasOutput: true,
@@ -458,8 +556,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '42s',
-          startTime: '2024-08-19 14:52:38',
-          endTime: '2024-08-19 14:53:20',
+          startTime: '2024-08-19 14:52:52',
+          endTime: '2024-08-19 14:53:34',
           details: '自定义处理完成',
           outputSize: '5.1KB',
           hasOutput: true,
@@ -481,7 +579,8 @@ const ExecutionDetails: React.FC = () => {
             "custom_audio_processing": {
               "noise_reduction": "applied",
               "volume_normalization": "completed",
-              "frequency_analysis": "extracted"
+              "frequency_analysis": "extracted",
+              "speech_segments": ["0:15-0:25", "1:30-1:45"]
             },
             "python_script_output": "音频特征提取和处理完成"
           }, null, 2)
@@ -490,8 +589,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据清洗完成', 
           duration: '30s',
-          startTime: '2024-08-19 14:53:20',
-          endTime: '2024-08-19 14:53:50',
+          startTime: '2024-08-19 14:53:34',
+          endTime: '2024-08-19 14:54:04',
           details: '清洗完成',
           outputSize: '1.8KB',
           hasOutput: true,
@@ -527,8 +626,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据增强完成', 
           duration: '15s',
-          startTime: '2024-08-19 14:53:50',
-          endTime: '2024-08-19 14:54:05',
+          startTime: '2024-08-19 14:54:04',
+          endTime: '2024-08-19 14:54:19',
           details: '增强完成',
           outputSize: '3.2KB',
           hasOutput: true,
@@ -571,12 +670,45 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始视频: 时长3分钟，包含评分网站广告',
       nodeProcessing: {
+        'Python预处理节点': { 
+          status: 'completed', 
+          result: 'Python预处理脚本执行成功', 
+          duration: '14s',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:38',
+          details: '文件预处理完成',
+          outputSize: '3.8KB',
+          hasOutput: true,
+          outputType: 'preprocessing',
+          outputPreview: JSON.stringify({
+            "file_validation": {
+              "format_check": "mp4 - valid",
+              "size_check": "5.5MB - within limits",
+              "corruption_check": "passed",
+              "video_integrity": "verified"
+            },
+            "preprocessing_results": {
+              "codec_detection": "H.264/AVC",
+              "resolution_analysis": "1920x1080",
+              "framerate_check": "30 fps",
+              "duration_check": "3:00 minutes",
+              "quality_assessment": "high quality video",
+              "preprocessing_filters": ["format_validation", "video_analysis", "audio_track_check"]
+            },
+            "python_script_output": "视频文件预处理完成，准备进行解析",
+            "processing_metadata": {
+              "script_version": "v1.0.0",
+              "execution_time": "14.2s",
+              "memory_usage": "145MB"
+            }
+          }, null, 2)
+        },
         '视频解析节点': { 
           status: 'completed', 
           result: '解析成功，提取视频元数据', 
           duration: '14s',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
+          startTime: '2024-08-19 14:52:38',
+          endTime: '2024-08-19 14:52:52',
           details: '解析完成',
           outputSize: '2KB',
           hasOutput: true,
@@ -617,8 +749,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '58s',
-          startTime: '2024-08-19 14:52:38',
-          endTime: '2024-08-19 14:53:36',
+          startTime: '2024-08-19 14:52:52',
+          endTime: '2024-08-19 14:53:50',
           details: '自定义处理完成',
           outputSize: '12.5KB',
           hasOutput: true,
@@ -641,7 +773,8 @@ const ExecutionDetails: React.FC = () => {
             "custom_video_processing": {
               "keyframe_extraction": "completed",
               "scene_segmentation": "applied",
-              "quality_enhancement": "processed"
+              "quality_enhancement": "processed",
+              "audio_video_sync": "verified"
             },
             "python_script_output": "视频内容分析和特征提取完成"
           }, null, 2)
@@ -650,8 +783,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据清洗完成', 
           duration: '30s',
-          startTime: '2024-08-19 14:53:36',
-          endTime: '2024-08-19 14:54:06',
+          startTime: '2024-08-19 14:53:50',
+          endTime: '2024-08-19 14:54:20',
           details: '清洗完成',
           outputSize: '1.8KB',
           hasOutput: true,
@@ -692,8 +825,8 @@ const ExecutionDetails: React.FC = () => {
           status: 'completed', 
           result: '数据增强完成', 
           duration: '15s',
-          startTime: '2024-08-19 14:54:06',
-          endTime: '2024-08-19 14:54:21',
+          startTime: '2024-08-19 14:54:20',
+          endTime: '2024-08-19 14:54:35',
           details: '增强完成',
           outputSize: '3.2KB',
           hasOutput: true,
