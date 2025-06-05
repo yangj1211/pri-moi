@@ -93,7 +93,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
         }
       },
       'python-custom': {
-        name: 'Python自定义节点',
+        name: 'Python2',
         type: '自定义处理',
         description: '执行自定义Python脚本进行数据处理',
         parameters: {
@@ -104,7 +104,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
         }
       },
       'python-preprocess': {
-        name: 'Python预处理节点',
+        name: 'Python1',
         type: '数据预处理',
         description: '执行Python脚本进行文件预处理和验证',
         parameters: {
@@ -608,7 +608,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
       ],
       'python-custom': [
         {
-          name: 'Python自定义节点',
+          name: 'Python2',
           status: 'completed',
           duration: '25s',
           description: '自定义脚本处理和数据合并'
@@ -1630,12 +1630,12 @@ const WorkflowDiagram: React.FC = () => {
 
   const nodes = [
     { id: 'start', label: '开始节点', x: 50, y: 200, color: 'bg-green-100 border-green-300 text-green-800' },
-    { id: 'python-preprocess', label: 'Python预处理节点', x: 200, y: 200, color: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
+    { id: 'python-preprocess', label: 'Python1', x: 200, y: 200, color: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
     { id: 'text-parse', label: '文本解析节点', x: 350, y: 120, color: 'bg-blue-100 border-blue-300 text-blue-800' },
     { id: 'image-parse', label: '图片解析节点', x: 350, y: 160, color: 'bg-purple-100 border-purple-300 text-purple-800' },
     { id: 'audio-parse', label: '音频解析节点', x: 350, y: 200, color: 'bg-orange-100 border-orange-300 text-orange-800' },
     { id: 'video-parse', label: '视频解析节点', x: 350, y: 240, color: 'bg-pink-100 border-pink-300 text-pink-800' },
-    { id: 'python-custom', label: 'Python自定义节点', x: 500, y: 200, color: 'bg-amber-100 border-amber-300 text-amber-800' },
+    { id: 'python-custom', label: 'Python2', x: 500, y: 200, color: 'bg-amber-100 border-amber-300 text-amber-800' },
     { id: 'clean', label: '数据清洗', x: 650, y: 200, color: 'bg-indigo-100 border-indigo-300 text-indigo-800' },
     { id: 'enhance', label: '数据增强', x: 800, y: 200, color: 'bg-teal-100 border-teal-300 text-teal-800' },
     { id: 'end', label: '结束节点', x: 950, y: 200, color: 'bg-green-100 border-green-300 text-green-800' }

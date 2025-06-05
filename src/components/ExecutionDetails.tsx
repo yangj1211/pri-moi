@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle, XCircle, Clock, Play, AlertCircle, Eye, Download, FileText, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckCircle, XCircle, Clock, Play, AlertCircle, FileText } from 'lucide-react';
 
 // 定义节点处理数据的类型
 interface NodeProcessingData {
@@ -30,9 +30,6 @@ interface FileProcessingData {
 
 const ExecutionDetails: React.FC = () => {
   const [expandedFiles, setExpandedFiles] = useState<string[]>([]);
-  const [viewingResult, setViewingResult] = useState<{fileId: string, nodeName: string} | null>(null);
-  const [blockIdSearch, setBlockIdSearch] = useState('');
-  const [contentSearch, setContentSearch] = useState('');
 
   // 根据文件类型获取对应的解析节点名称
   const getParseNodeName = (fileType: string): string => {
@@ -96,32 +93,29 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始图片: 1920x1080像素，包含评分网页面截图',
       nodeProcessing: {
-        'Python预处理节点': { 
+        'Python自定义': { 
           status: 'completed', 
-          result: 'Python预处理脚本执行成功', 
+          result: 'Python自定义脚本执行成功', 
           duration: '18s',
           startTime: '2024-08-19 14:52:24',
           endTime: '2024-08-19 14:52:42',
-          details: '文件预处理完成',
+          details: '自定义处理完成',
           outputSize: '2.8KB',
           hasOutput: true,
-          outputType: 'preprocessing',
+          outputType: 'custom_processing',
           outputPreview: JSON.stringify({
-            "file_validation": {
-              "format_check": "jpg - valid",
-              "size_check": "2.5MB - within limits",
-              "corruption_check": "passed",
-              "metadata_extraction": "completed"
+            "custom_analysis": {
+              "image_quality_score": 0.92,
+              "text_extraction_confidence": 0.95,
+              "object_detection_results": ["评分界面", "按钮", "文本"],
+              "color_analysis": {
+                "dominant_colors": ["#4F46E5", "#10B981", "#F59E0B"],
+                "color_harmony": 0.88
+              }
             },
-            "preprocessing_results": {
-              "encoding_detection": "binary",
-              "structure_analysis": "image file structure valid",
-              "quality_assessment": "high quality image",
-              "preprocessing_filters": ["format_validation", "size_optimization"]
-            },
-            "python_script_output": "文件预处理完成，准备进行解析",
+            "python_script_output": "成功提取了评分网页面的关键视觉元素",
             "processing_metadata": {
-              "script_version": "v1.0.0",
+              "script_version": "v1.2.3",
               "execution_time": "18.2s",
               "memory_usage": "95MB"
             }
@@ -164,7 +158,7 @@ const ExecutionDetails: React.FC = () => {
   </tbody>
 </table>`
         },
-        'Python自定义节点': { 
+        'Python2': { 
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '25s',
@@ -277,32 +271,30 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据清洗',
       originalContent: '原始文档内容: 包含评分网站分析报告，共5页内容',
       nodeProcessing: {
-        'Python预处理节点': { 
+        'Python自定义': { 
           status: 'completed', 
-          result: 'Python预处理脚本执行成功', 
+          result: 'Python自定义脚本执行成功', 
           duration: '22s',
           startTime: '2024-08-19 14:52:24',
           endTime: '2024-08-19 14:52:46',
-          details: '文件预处理完成',
+          details: '自定义处理完成',
           outputSize: '3.5KB',
           hasOutput: true,
-          outputType: 'preprocessing',
+          outputType: 'custom_processing',
           outputPreview: JSON.stringify({
-            "file_validation": {
-              "format_check": "docx - valid",
-              "size_check": "1.2MB - within limits",
-              "corruption_check": "passed",
-              "encoding_detection": "UTF-8"
+            "custom_analysis": {
+              "document_structure_score": 0.95,
+              "text_quality_score": 0.88,
+              "content_categories": ["报告", "数据分析", "用户反馈"],
+              "language_analysis": {
+                "primary_language": "中文",
+                "readability_score": 0.82,
+                "technical_terms_count": 45
+              }
             },
-            "preprocessing_results": {
-              "structure_analysis": "document structure valid",
-              "content_extraction": "text and images detected",
-              "quality_assessment": "good quality document",
-              "preprocessing_filters": ["format_validation", "encoding_check", "structure_analysis"]
-            },
-            "python_script_output": "文档预处理完成，准备进行文本解析",
+            "python_script_output": "成功分析了文档结构和内容质量",
             "processing_metadata": {
-              "script_version": "v1.0.0",
+              "script_version": "v1.2.3",
               "execution_time": "22.1s",
               "memory_usage": "112MB"
             }
@@ -350,7 +342,7 @@ const ExecutionDetails: React.FC = () => {
   </tbody>
 </table>`
         },
-        'Python自定义节点': { 
+        'Python2': { 
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '35s',
@@ -413,42 +405,89 @@ const ExecutionDetails: React.FC = () => {
       fileType: 'txt',
       fileSize: '500KB',
       overallStatus: '处理失败',
-      currentNode: 'Python自定义节点',
+      currentNode: 'Python2',
       originalContent: '原始文件: 编码格式错误，无法正常读取内容',
       nodeProcessing: {
-        'Python预处理节点': { 
-          status: 'failed', 
-          result: 'Python预处理脚本执行失败', 
-          duration: '4s',
+        'Python自定义': { 
+          status: 'completed', 
+          result: 'Python自定义脚本执行成功', 
+          duration: '18s',
           startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:28',
-          details: '预处理失败',
+          endTime: '2024-08-19 14:52:42',
+          details: '自定义处理完成',
+          outputSize: '2.8KB',
+          hasOutput: true,
+          outputType: 'custom_processing',
+          outputPreview: JSON.stringify({
+            "custom_analysis": {
+              "text_length": 2048,
+              "sentence_count": 156,
+              "keyword_density": {
+                "评分": 0.045,
+                "网站": 0.038,
+                "用户": 0.032
+              },
+              "sentiment_analysis": {
+                "overall_sentiment": "neutral",
+                "confidence": 0.78
+              }
+            },
+            "python_script_output": "成功提取了文本的关键特征和语义信息",
+            "processing_metadata": {
+              "script_version": "v1.2.3",
+              "execution_time": "18.2s",
+              "memory_usage": "95MB"
+            }
+          }, null, 2)
+        },
+        '文本解析节点': { 
+          status: 'completed', 
+          result: '解析成功，提取文本内容', 
+          duration: '25s',
+          startTime: '2024-08-19 14:52:42',
+          endTime: '2024-08-19 14:53:07',
+          details: '解析完成',
+          outputSize: '12KB',
+          hasOutput: true,
+          outputType: 'text',
+          outputPreview: `<table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+  <thead>
+    <tr style="background-color: #f8f9fa;">
+      <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; width: 25%;">块 ID</th>
+      <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; width: 15%;">类型</th>
+      <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; width: 60%;">识别内容</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">1a2b3c4d-5e6f-7890-abcd-ef1234567890</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">文本</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">评分网站使用指南</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">2b3c4d5e-6f78-9012-bcde-f23456789012</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">文本</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">本指南介绍了如何使用评分网站进行产品评价和反馈提交。</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">3c4d5e6f-7890-1234-cdef-345678901234</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">文本</td>
+      <td style="border: 1px solid #dee2e6; padding: 8px;">用户可以通过星级评分、文字评论等方式表达对产品的满意度。</td>
+    </tr>
+  </tbody>
+</table>`
+        },
+        'Python2': { 
+          status: 'failed', 
+          result: 'Python脚本执行失败', 
+          duration: '8s',
+          startTime: '2024-08-19 14:53:07',
+          endTime: '2024-08-19 14:53:15',
+          details: '自定义处理失败',
           outputSize: '',
           hasOutput: true,
           outputType: 'error',
-          outputPreview: 'Error: FileProcessingError\n文件预处理失败\n检测到的编码: unknown\n文件大小: 500KB\n错误位置: 文件头部\n错误详情: 无法识别文件编码格式\n\nPython脚本错误:\n  File "/scripts/preprocess.py", line 45, in validate_file\n    content = file.read().decode("utf-8")\nUnicodeDecodeError: \'utf-8\' codec can\'t decode byte 0xff in position 0\n\n建议解决方案:\n1. 检查文件编码格式\n2. 使用文本编辑器重新保存为UTF-8格式\n3. 联系管理员获取技术支持'
-        },
-        '文本解析节点': { 
-          status: 'skipped', 
-          result: '跳过处理', 
-          duration: '-',
-          startTime: '',
-          endTime: '',
-          details: '已跳过',
-          outputSize: '',
-          hasOutput: false,
-          outputType: 'skipped'
-        },
-        'Python自定义节点': { 
-          status: 'skipped', 
-          result: '跳过处理', 
-          duration: '-',
-          startTime: '',
-          endTime: '',
-          details: '已跳过',
-          outputSize: '',
-          hasOutput: false,
-          outputType: 'skipped'
+          outputPreview: 'Error: CustomProcessingError\nPython2脚本执行失败\n错误类型: 内存不足\n错误位置: 自定义处理模块\n错误详情: 处理大文件时内存溢出\n\nPython脚本错误:\n  File "/scripts/custom_process.py", line 127, in process_text\n    result = nlp_model.analyze(large_text_chunk)\nMemoryError: Unable to allocate 2.5 GiB for an array with shape (327680000,) and data type float64\n\n建议解决方案:\n1. 减少文件大小或分块处理\n2. 增加系统内存配置\n3. 优化处理算法\n4. 联系技术支持'
         },
         '数据清洗': { 
           status: 'skipped', 
@@ -483,33 +522,34 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始音频: 时长2分钟，包含评分网站背景音乐',
       nodeProcessing: {
-        'Python预处理节点': { 
+        'Python自定义': { 
           status: 'completed', 
-          result: 'Python预处理脚本执行成功', 
+          result: 'Python自定义脚本执行成功', 
           duration: '14s',
           startTime: '2024-08-19 14:52:24',
           endTime: '2024-08-19 14:52:38',
-          details: '文件预处理完成',
+          details: '自定义处理完成',
           outputSize: '2.1KB',
           hasOutput: true,
-          outputType: 'preprocessing',
+          outputType: 'custom_processing',
           outputPreview: JSON.stringify({
-            "file_validation": {
-              "format_check": "mp3 - valid",
-              "size_check": "2.5MB - within limits",
-              "corruption_check": "passed",
-              "audio_integrity": "verified"
+            "custom_analysis": {
+              "audio_duration": 120.5,
+              "sample_rate": 44100,
+              "audio_features": {
+                "tempo": 120,
+                "key": "C Major",
+                "loudness": -12.3,
+                "energy": 0.75
+              },
+              "speech_detection": {
+                "speech_segments": ["0:15-0:25", "1:30-1:45"],
+                "speech_confidence": 0.89
+              }
             },
-            "preprocessing_results": {
-              "encoding_detection": "MP3 Layer III",
-              "bitrate_analysis": "320 kbps",
-              "duration_check": "2:00 minutes",
-              "quality_assessment": "high quality audio",
-              "preprocessing_filters": ["format_validation", "audio_analysis"]
-            },
-            "python_script_output": "音频文件预处理完成，准备进行解析",
+            "python_script_output": "成功提取了音频的声学特征和内容信息",
             "processing_metadata": {
-              "script_version": "v1.0.0",
+              "script_version": "v1.2.3",
               "execution_time": "14.2s",
               "memory_usage": "85MB"
             }
@@ -552,7 +592,7 @@ const ExecutionDetails: React.FC = () => {
   </tbody>
 </table>`
         },
-        'Python自定义节点': { 
+        'Python2': { 
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '42s',
@@ -670,34 +710,34 @@ const ExecutionDetails: React.FC = () => {
       currentNode: '数据增强',
       originalContent: '原始视频: 时长3分钟，包含评分网站广告',
       nodeProcessing: {
-        'Python预处理节点': { 
+        'Python自定义': { 
           status: 'completed', 
-          result: 'Python预处理脚本执行成功', 
+          result: 'Python自定义脚本执行成功', 
           duration: '14s',
           startTime: '2024-08-19 14:52:24',
           endTime: '2024-08-19 14:52:38',
-          details: '文件预处理完成',
+          details: '自定义处理完成',
           outputSize: '3.8KB',
           hasOutput: true,
-          outputType: 'preprocessing',
+          outputType: 'custom_processing',
           outputPreview: JSON.stringify({
-            "file_validation": {
-              "format_check": "mp4 - valid",
-              "size_check": "5.5MB - within limits",
-              "corruption_check": "passed",
-              "video_integrity": "verified"
+            "custom_analysis": {
+              "video_duration": 180.0,
+              "resolution": "1920x1080",
+              "frame_rate": 30,
+              "scene_analysis": {
+                "scene_changes": [15, 45, 90, 120, 165],
+                "dominant_colors": ["#4F46E5", "#FFFFFF", "#10B981"],
+                "motion_intensity": 0.65
+              },
+              "object_detection": {
+                "detected_objects": ["界面", "按钮", "文字", "logo"],
+                "confidence": 0.87
+              }
             },
-            "preprocessing_results": {
-              "codec_detection": "H.264/AVC",
-              "resolution_analysis": "1920x1080",
-              "framerate_check": "30 fps",
-              "duration_check": "3:00 minutes",
-              "quality_assessment": "high quality video",
-              "preprocessing_filters": ["format_validation", "video_analysis", "audio_track_check"]
-            },
-            "python_script_output": "视频文件预处理完成，准备进行解析",
+            "python_script_output": "成功分析了视频内容和视觉特征",
             "processing_metadata": {
-              "script_version": "v1.0.0",
+              "script_version": "v1.2.3",
               "execution_time": "14.2s",
               "memory_usage": "145MB"
             }
@@ -745,7 +785,7 @@ const ExecutionDetails: React.FC = () => {
   </tbody>
 </table>`
         },
-        'Python自定义节点': { 
+        'Python2': { 
           status: 'completed', 
           result: 'Python脚本执行成功', 
           duration: '58s',
@@ -859,22 +899,114 @@ const ExecutionDetails: React.FC = () => {
 </table>`
         }
       }
+    },
+    {
+      fileId: 'file-6',
+      fileName: '通过评分网-6.pdf',
+      fileType: 'pdf',
+      fileSize: '800KB',
+      overallStatus: '处理完成',
+      currentNode: 'Python自定义',
+      originalContent: '原始PDF文档: 包含广告内容，不符合处理要求',
+      nodeProcessing: {
+        'Python自定义': { 
+          status: 'completed', 
+          result: 'Python自定义脚本执行成功，文件被过滤', 
+          duration: '12s',
+          startTime: '2024-08-19 14:52:30',
+          endTime: '2024-08-19 14:52:42',
+          details: '文件预处理完成，检测到广告内容，已过滤',
+          outputSize: '1.2KB',
+          hasOutput: true,
+          outputType: 'filtered',
+          outputPreview: JSON.stringify({
+            "custom_analysis": {
+              "content_type_detection": "advertisement",
+              "quality_score": 0.25,
+              "relevance_score": 0.15,
+              "filter_triggers": ["advertisement_keywords", "promotional_content", "low_quality_score"]
+            },
+            "filter_decision": {
+              "action": "FILTERED",
+              "reason": "检测到广告内容，质量分数过低",
+              "confidence": 0.92,
+              "filter_rules_matched": ["content_quality_filter", "advertisement_filter"]
+            },
+            "python_script_output": "文件已被过滤，不符合处理要求",
+            "processing_metadata": {
+              "script_version": "v1.2.3",
+              "execution_time": "12.1s",
+              "memory_usage": "68MB"
+            }
+          }, null, 2)
+        },
+        '文本解析节点': { 
+          status: 'skipped', 
+          result: '跳过处理 - 文件已被过滤', 
+          duration: '-',
+          startTime: '',
+          endTime: '',
+          details: '已跳过',
+          outputSize: '',
+          hasOutput: false,
+          outputType: 'skipped'
+        },
+        'Python2': { 
+          status: 'skipped', 
+          result: '跳过处理 - 文件已被过滤', 
+          duration: '-',
+          startTime: '',
+          endTime: '',
+          details: '已跳过',
+          outputSize: '',
+          hasOutput: false,
+          outputType: 'skipped'
+        },
+        '数据清洗': { 
+          status: 'skipped', 
+          result: '跳过处理 - 文件已被过滤', 
+          duration: '-',
+          startTime: '',
+          endTime: '',
+          details: '已跳过',
+          outputSize: '',
+          hasOutput: false,
+          outputType: 'skipped'
+        },
+        '数据增强': { 
+          status: 'skipped', 
+          result: '跳过处理 - 文件已被过滤', 
+          duration: '-',
+          startTime: '',
+          endTime: '',
+          details: '已跳过',
+          outputSize: '',
+          hasOutput: false,
+          outputType: 'skipped'
+        }
+      }
     }
   ];
 
   // 为了兼容表格显示，添加辅助函数
   const getDisplayData = (file: FileProcessingData) => {
     const parseNodeName = getParseNodeName(file.fileType);
+    
+    // 检查是否在Python自定义节点被过滤
+    const isFiltered = file.nodeProcessing['Python自定义']?.outputType === 'filtered';
+    
     return {
       ...file,
       status: file.overallStatus,
-      createTime: file.nodeProcessing[parseNodeName]?.startTime || '2024-08-19 14:52:24',
-      updateTime: Object.values(file.nodeProcessing).find(node => node.endTime)?.endTime || file.nodeProcessing[parseNodeName]?.startTime || '2024-08-19 14:52:24',
-      note: file.overallStatus === '处理失败' ? '解析错误' : file.overallStatus === '处理中' ? `当前在${file.currentNode}` : '-',
+      createTime: file.nodeProcessing[parseNodeName]?.startTime || file.nodeProcessing['Python自定义']?.startTime || '2024-08-19 14:52:24',
+      updateTime: Object.values(file.nodeProcessing).find(node => node.endTime)?.endTime || file.nodeProcessing[parseNodeName]?.startTime || file.nodeProcessing['Python自定义']?.endTime || '2024-08-19 14:52:24',
+      note: file.overallStatus === '处理失败' ? '解析错误' : 
+            file.overallStatus === '处理中' ? `当前在${file.currentNode}` : 
+            isFiltered ? '文件已过滤' : '-',
       statusColor: file.overallStatus === '处理完成' ? 'text-green-600' : 
                    file.overallStatus === '处理中' ? 'text-blue-600' : 
                    file.overallStatus === '处理失败' ? 'text-red-600' : 'text-gray-600',
-      statusIcon: file.overallStatus === '等待中' ? '○' : '●'
+      statusIcon: file.overallStatus === '处理中' ? '●' : file.overallStatus === '等待中' ? '○' : '●'
     };
   };
 
@@ -886,16 +1018,6 @@ const ExecutionDetails: React.FC = () => {
     );
   };
 
-  const openResultViewer = (fileId: string, nodeName: string) => {
-    setViewingResult({ fileId, nodeName });
-  };
-
-  const closeResultViewer = () => {
-    setViewingResult(null);
-    setBlockIdSearch('');
-    setContentSearch('');
-  };
-
   const getNodeStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-3 h-3 text-green-600" />;
@@ -905,53 +1027,6 @@ const ExecutionDetails: React.FC = () => {
       case 'skipped': return <AlertCircle className="w-3 h-3 text-orange-500" />;
       default: return <Clock className="w-3 h-3 text-gray-400" />;
     }
-  };
-
-  const getCurrentFile = () => {
-    if (!viewingResult) return null;
-    return tableData.find(file => file.fileId === viewingResult.fileId);
-  };
-
-  const getCurrentNodeData = (): NodeProcessingData | null => {
-    const file = getCurrentFile();
-    if (!file || !viewingResult) return null;
-    return file.nodeProcessing[viewingResult.nodeName] || null;
-  };
-
-  // 搜索过滤功能
-  const filterTableContent = (htmlContent: string): string => {
-    if (!blockIdSearch && !contentSearch) return htmlContent;
-    
-    // 解析HTML表格内容
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlContent, 'text/html');
-    const rows = doc.querySelectorAll('tbody tr');
-    
-    let filteredRows: string[] = [];
-    
-    rows.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      if (cells.length >= 3) {
-        const blockId = cells[0].textContent || '';
-        const content = cells[2].textContent || '';
-        
-        const matchesBlockId = !blockIdSearch || blockId.toLowerCase().includes(blockIdSearch.toLowerCase());
-        const matchesContent = !contentSearch || content.toLowerCase().includes(contentSearch.toLowerCase());
-        
-        if (matchesBlockId && matchesContent) {
-          filteredRows.push(row.outerHTML);
-        }
-      }
-    });
-    
-    // 重新构建表格
-    const tableHeader = doc.querySelector('thead')?.outerHTML || '';
-    const filteredTableBody = `<tbody>${filteredRows.join('')}</tbody>`;
-    
-    return `<table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-      ${tableHeader}
-      ${filteredTableBody}
-    </table>`;
   };
 
   return (
@@ -1029,8 +1104,6 @@ const ExecutionDetails: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {file.overallStatus === '处理失败' ? (
                       <span className="text-red-600 text-xs">编码格式错误</span>
-                    ) : file.overallStatus === '处理中' ? (
-                      <span className="text-blue-600 text-xs">正在处理中...</span>
                     ) : (
                       <span className="text-gray-400 text-xs">-</span>
                     )}
@@ -1062,34 +1135,18 @@ const ExecutionDetails: React.FC = () => {
                       <div className="space-y-4">
                         <h4 className="font-medium text-gray-900">节点处理详情</h4>
                         
-                        {/* 原始文件预览 */}
-                        <div className="p-3 bg-white rounded border">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <FileText className="w-4 h-4 text-gray-500" />
-                              <span className="font-medium text-gray-900">原始文件</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                onClick={() => openResultViewer(file.fileId, '原始文件')}
-                                className="text-blue-600 hover:text-blue-800"
-                                title="查看内容"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button 
-                                className="text-green-600 hover:text-green-800"
-                                title="下载原始文件"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
                         {/* 节点处理结果 */}
                         <div className="relative">
-                          {Object.entries(file.nodeProcessing).map(([nodeName, nodeData], index, array) => (
+                          {Object.entries(file.nodeProcessing)
+                            .filter(([nodeName, nodeData]) => {
+                              // 如果文件在Python自定义被过滤，只显示Python自定义节点
+                              if (file.nodeProcessing['Python自定义']?.outputType === 'filtered') {
+                                return nodeName === 'Python自定义';
+                              }
+                              // 否则显示所有非跳过的节点
+                              return nodeData.status !== 'skipped';
+                            })
+                            .map(([nodeName, nodeData], index, array) => (
                             <div key={nodeName} className="relative">
                               {/* 连接线 - 不是第一个节点时显示 */}
                               {index > 0 && (
@@ -1106,25 +1163,6 @@ const ExecutionDetails: React.FC = () => {
                                         耗时: {nodeData.duration}
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    {nodeData.hasOutput && nodeData.status !== 'failed' && (
-                                      <>
-                                        <button 
-                                          onClick={() => openResultViewer(file.fileId, nodeName)}
-                                          className="text-blue-600 hover:text-blue-800"
-                                          title="查看结果"
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                          className="text-green-600 hover:text-green-800"
-                                          title="下载结果"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </button>
-                                      </>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1145,89 +1183,6 @@ const ExecutionDetails: React.FC = () => {
           </tbody>
         </table>
       </div>
-      
-      {/* 处理结果查看器模态框 */}
-      {viewingResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {getCurrentFile()?.fileName} - {viewingResult.nodeName}处理结果
-              </h3>
-              <div className="flex items-center space-x-2">
-                {/* 解析节点和数据清洗节点的搜索框 */}
-                {(viewingResult.nodeName.includes('解析节点') || viewingResult.nodeName.includes('数据清洗')) && (
-                  <>
-                    <div className="flex items-center space-x-1">
-                      <Search className="w-3 h-3 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="搜索块ID"
-                        value={blockIdSearch}
-                        onChange={(e) => setBlockIdSearch(e.target.value)}
-                        className="px-2 py-1 text-xs border border-gray-300 rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Search className="w-3 h-3 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="搜索内容"
-                        value={contentSearch}
-                        onChange={(e) => setContentSearch(e.target.value)}
-                        className="px-2 py-1 text-xs border border-gray-300 rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
-                <button
-                  onClick={closeResultViewer}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              {viewingResult.nodeName === '原始文件' ? (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600 mb-3">原始文件内容预览:</div>
-                  <div className="bg-gray-50 p-4 rounded border font-mono text-sm">
-                    {getCurrentFile()?.originalContent}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-4 rounded border">
-                    {getCurrentNodeData()?.outputType === 'metadata' || getCurrentNodeData()?.outputType === 'text' || getCurrentNodeData()?.outputType === 'structured_data' || getCurrentNodeData()?.outputType === 'enhanced_data' ? (
-                      <div 
-                        className="text-sm"
-                        dangerouslySetInnerHTML={{ 
-                          __html: getCurrentNodeData()?.outputType === 'enhanced_data' 
-                            ? getCurrentNodeData()?.outputPreview || '' 
-                            : filterTableContent(getCurrentNodeData()?.outputPreview || '') 
-                        }}
-                      />
-                    ) : (
-                      <pre className="text-sm whitespace-pre-wrap">
-                        {getCurrentNodeData()?.outputPreview || '暂无输出内容'}
-                      </pre>
-                    )}
-                  </div>
-                  {getCurrentNodeData()?.outputType === 'error' && (
-                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
-                      <div className="text-sm font-medium text-red-800 mb-1">错误信息</div>
-                      <div className="text-sm text-red-600">
-                        建议检查文件格式或联系管理员
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-center space-x-2">

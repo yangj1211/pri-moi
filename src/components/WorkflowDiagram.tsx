@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Settings, X, Eye } from 'lucide-react';
+import { FileText, Settings, X, Eye, GitBranch } from 'lucide-react';
 
 interface FileItem {
   id: string;
@@ -14,20 +14,13 @@ interface NodeModalProps {
   node: any;
   isOpen: boolean;
   onClose: () => void;
+  nodes: any[];
+  onNodeChange: (node: any) => void;
+  highlightedFileId: string | null;
+  setHighlightedFileId: (fileId: string | null) => void;
 }
 
-// 添加节点类型定义
-type NodeType = 'start-end' | 'python' | 'text-parse' | 'image-parse' | 'audio-parse' | 'video-parse' | 'data-clean' | 'data-enhance';
-
-interface WorkflowNode {
-  id: string;
-  label: string;
-  x: number;
-  y: number;
-  type: NodeType;
-}
-
-const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
+const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose, nodes, onNodeChange, highlightedFileId, setHighlightedFileId }) => {
   const [activeTab, setActiveTab] = useState<'config' | 'files'>('files');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
@@ -38,8 +31,19 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
       setPreviewFile(null);
       setCurrentNodeId(node.id);
       setActiveTab('files'); // 强制重置到文件标签页
+      setHighlightedFileId(null); // 重置高亮状态
     }
   }, [node, currentNodeId]);
+
+  // 清除高亮状态的定时器
+  useEffect(() => {
+    if (highlightedFileId) {
+      const timer = setTimeout(() => {
+        setHighlightedFileId(null);
+      }, 3000); // 3秒后清除高亮
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedFileId]);
 
   if (!isOpen || !node) return null;
 
@@ -104,7 +108,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
         }
       },
       'python-custom': {
-        name: 'Python自定义节点',
+        name: 'Python2',
         type: '自定义处理',
         description: '执行自定义Python脚本进行数据处理',
         parameters: {
@@ -115,7 +119,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
         }
       },
       'python-preprocess': {
-        name: 'Python预处理节点',
+        name: 'Python1',
         type: '数据预处理',
         description: '执行Python脚本进行文件预处理和验证',
         parameters: {
@@ -166,305 +170,10 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
   // 模拟每个节点处理后的文件列表
   const getNodeFiles = (nodeId: string): FileItem[] => {
     const filesByNode: Record<string, FileItem[]> = {
-      'text-parse': [
-        {
-          id: '1',
-          name: '通过评分网-1.txt',
-          type: 'txt',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        },
-        {
-          id: '2',
-          name: '通过评分网-2.docx',
-          type: 'docx',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:53',
-          status: '处理中'
-        },
-        {
-          id: '3',
-          name: '通过评分网-3.pdf',
-          type: 'pdf',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:28',
-          status: '处理失败'
-        },
-        {
-          id: '4',
-          name: '通过评分网-4.md',
-          type: 'md',
-          startTime: '2024-08-19 14:52:25',
-          endTime: '2024-08-19 14:52:40',
-          status: '处理完成'
-        }
-      ],
-      'image-parse': [
-        {
-          id: '5',
-          name: '通过评分网-1.jpg',
-          type: 'jpg',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        },
-        {
-          id: '6',
-          name: '通过评分网-2.png',
-          type: 'png',
-          startTime: '2024-08-19 14:52:25',
-          endTime: '2024-08-19 14:52:42',
-          status: '处理完成'
-        },
-        {
-          id: '7',
-          name: '通过评分网-3.gif',
-          type: 'gif',
-          startTime: '2024-08-19 14:52:26',
-          endTime: '2024-08-19 14:52:35',
-          status: '处理中'
-        },
-        {
-          id: '8',
-          name: '通过评分网-4.bmp',
-          type: 'bmp',
-          startTime: '2024-08-19 14:52:27',
-          endTime: '2024-08-19 14:52:30',
-          status: '处理失败'
-        }
-      ],
-      'audio-parse': [
-        {
-          id: '9',
-          name: '通过评分网-1.mp3',
-          type: 'mp3',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        },
-        {
-          id: '10',
-          name: '通过评分网-2.wav',
-          type: 'wav',
-          startTime: '2024-08-19 14:52:25',
-          endTime: '2024-08-19 14:52:45',
-          status: '处理完成'
-        },
-        {
-          id: '11',
-          name: '通过评分网-3.flac',
-          type: 'flac',
-          startTime: '2024-08-19 14:52:26',
-          endTime: '2024-08-19 14:52:50',
-          status: '处理中'
-        }
-      ],
-      'video-parse': [
-        {
-          id: '12',
-          name: '通过评分网-1.mp4',
-          type: 'mp4',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        },
-        {
-          id: '13',
-          name: '通过评分网-2.avi',
-          type: 'avi',
-          startTime: '2024-08-19 14:52:25',
-          endTime: '2024-08-19 14:53:15',
-          status: '处理中'
-        },
-        {
-          id: '14',
-          name: '通过评分网-3.mov',
-          type: 'mov',
-          startTime: '2024-08-19 14:52:26',
-          endTime: '2024-08-19 14:52:40',
-          status: '处理失败'
-        },
-        {
-          id: '15',
-          name: '通过评分网-4.wmv',
-          type: 'wmv',
-          startTime: '2024-08-19 14:52:27',
-          endTime: '2024-08-19 14:52:55',
-          status: '处理完成'
-        }
-      ],
-      'python-custom': [
-        {
-          id: '16',
-          name: '合并数据集-1.pdf',
-          type: 'pdf',
-          startTime: '2024-08-19 14:53:00',
-          endTime: '2024-08-19 14:53:15',
-          status: '处理完成'
-        },
-        {
-          id: '17',
-          name: '特征提取结果-1.docx',
-          type: 'docx',
-          startTime: '2024-08-19 14:53:01',
-          endTime: '2024-08-19 14:53:20',
-          status: '处理完成'
-        },
-        {
-          id: '18',
-          name: '处理结果图-1.png',
-          type: 'png',
-          startTime: '2024-08-19 14:53:02',
-          endTime: '2024-08-19 14:53:10',
-          status: '处理中'
-        },
-        {
-          id: '19',
-          name: '样本图片-1.jpg',
-          type: 'jpg',
-          startTime: '2024-08-19 14:53:03',
-          endTime: '2024-08-19 14:53:05',
-          status: '处理失败'
-        },
-        {
-          id: '20',
-          name: '音频合成-1.mp3',
-          type: 'mp3',
-          startTime: '2024-08-19 14:53:04',
-          endTime: '2024-08-19 14:53:18',
-          status: '处理完成'
-        },
-        {
-          id: '21',
-          name: '演示视频-1.mp4',
-          type: 'mp4',
-          startTime: '2024-08-19 14:53:05',
-          endTime: '2024-08-19 14:53:25',
-          status: '处理完成'
-        }
-      ],
-      'python-preprocess': [
-        {
-          id: '36',
-          name: '预处理-通过评分网-1.jpg',
-          type: 'jpg',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:42',
-          status: '处理完成'
-        },
-        {
-          id: '37',
-          name: '预处理-通过评分网-2.docx',
-          type: 'docx',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:46',
-          status: '处理完成'
-        },
-        {
-          id: '38',
-          name: '预处理-通过评分网-3.txt',
-          type: 'txt',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:28',
-          status: '处理失败'
-        },
-        {
-          id: '39',
-          name: '预处理-通过评分网-4.mp3',
-          type: 'mp3',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        },
-        {
-          id: '40',
-          name: '预处理-通过评分网-5.mp4',
-          type: 'mp4',
-          startTime: '2024-08-19 14:52:24',
-          endTime: '2024-08-19 14:52:38',
-          status: '处理完成'
-        }
-      ],
-      'clean': [
-        {
-          id: '22',
-          name: '合并数据集-1.pdf',
-          type: 'pdf',
-          startTime: '2024-08-19 14:53:20',
-          endTime: '2024-08-19 14:53:35',
-          status: '处理完成'
-        },
-        {
-          id: '23',
-          name: '特征提取结果-1.docx',
-          type: 'docx',
-          startTime: '2024-08-19 14:53:21',
-          endTime: '2024-08-19 14:53:30',
-          status: '处理完成'
-        },
-        {
-          id: '24',
-          name: '处理结果图-1.jpg',
-          type: 'jpg',
-          startTime: '2024-08-19 14:53:22',
-          endTime: '2024-08-19 14:53:40',
-          status: '处理中'
-        },
-        {
-          id: '25',
-          name: '音频合成-1.mp3',
-          type: 'mp3',
-          startTime: '2024-08-19 14:53:23',
-          endTime: '2024-08-19 14:53:25',
-          status: '处理失败'
-        },
-        {
-          id: '26',
-          name: '演示视频-1.mp4',
-          type: 'mp4',
-          startTime: '2024-08-19 14:53:24',
-          endTime: '2024-08-19 14:53:45',
-          status: '处理完成'
-        }
-      ],
-      'enhance': [
-        {
-          id: '27',
-          name: '增强文档-1.pdf',
-          type: 'pdf',
-          startTime: '2024-08-19 14:53:40',
-          endTime: '2024-08-19 14:53:55',
-          status: '处理完成'
-        },
-        {
-          id: '28',
-          name: '增强图片-1.jpg',
-          type: 'jpg',
-          startTime: '2024-08-19 14:53:41',
-          endTime: '2024-08-19 14:54:00',
-          status: '处理完成'
-        },
-        {
-          id: '29',
-          name: '增强视频-1.mp4',
-          type: 'mp4',
-          startTime: '2024-08-19 14:53:42',
-          endTime: '2024-08-19 14:54:10',
-          status: '处理中'
-        },
-        {
-          id: '30',
-          name: '增强音频-1.mp3',
-          type: 'mp3',
-          startTime: '2024-08-19 14:53:43',
-          endTime: '2024-08-19 14:53:50',
-          status: '处理完成'
-        }
-      ],
+      // 开始节点：原始输入文件
       'start': [
         {
-          id: '31',
+          id: '1',
           name: '产品介绍.doc',
           type: 'doc',
           startTime: '2024-08-19 14:52:20',
@@ -472,7 +181,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '32',
+          id: '2',
           name: '营销方案.ppt',
           type: 'ppt',
           startTime: '2024-08-19 14:52:20',
@@ -480,7 +189,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '33',
+          id: '3',
           name: '用户头像.jpg',
           type: 'jpg',
           startTime: '2024-08-19 14:52:20',
@@ -488,7 +197,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '34',
+          id: '4',
           name: '界面截图.png',
           type: 'png',
           startTime: '2024-08-19 14:52:20',
@@ -496,7 +205,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '35',
+          id: '5',
           name: '背景音乐.mp3',
           type: 'mp3',
           startTime: '2024-08-19 14:52:20',
@@ -504,7 +213,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '36',
+          id: '6',
           name: '宣传视频.mp4',
           type: 'mp4',
           startTime: '2024-08-19 14:52:20',
@@ -512,45 +221,294 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           status: '处理完成'
         },
         {
-          id: '37',
-          name: '启动配置-1.yaml',
+          id: '7',
+          name: '配置文件.yaml',
           type: 'yaml',
           startTime: '2024-08-19 14:52:20',
           endTime: '2024-08-19 14:52:22',
           status: '处理完成'
         },
         {
-          id: '38',
-          name: '输入清单-1.txt',
+          id: '8',
+          name: '说明文档.txt',
           type: 'txt',
           startTime: '2024-08-19 14:52:21',
           endTime: '2024-08-19 14:52:23',
           status: '处理完成'
         }
       ],
-      'end': [
+      // Python预处理节点：对所有文件进行预处理
+      'python-preprocess': [
+        {
+          id: '9',
+          name: '预处理-产品介绍.doc',
+          type: 'doc',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:42',
+          status: '处理完成'
+        },
+        {
+          id: '10',
+          name: '预处理-营销方案.ppt',
+          type: 'ppt',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:46',
+          status: '处理完成'
+        },
+        {
+          id: '11',
+          name: '预处理-用户头像.jpg',
+          type: 'jpg',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:28',
+          status: '处理完成'
+        },
+        {
+          id: '12',
+          name: '预处理-界面截图.png',
+          type: 'png',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:38',
+          status: '处理失败'
+        },
+        {
+          id: '13',
+          name: '预处理-背景音乐.mp3',
+          type: 'mp3',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:38',
+          status: '处理完成'
+        },
+        {
+          id: '14',
+          name: '预处理-宣传视频.mp4',
+          type: 'mp4',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:38',
+          status: '处理完成'
+        },
+        {
+          id: '15',
+          name: '预处理-说明文档.txt',
+          type: 'txt',
+          startTime: '2024-08-19 14:52:24',
+          endTime: '2024-08-19 14:52:28',
+          status: '处理完成'
+        }
+      ],
+      // 文本解析节点：只处理文本类文件（doc, ppt, txt）
+      'text-parse': [
+        {
+          id: '16',
+          name: '文本解析-产品介绍.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:45',
+          endTime: '2024-08-19 14:52:58',
+          status: '处理完成'
+        },
+        {
+          id: '17',
+          name: '文本解析-营销方案.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:47',
+          endTime: '2024-08-19 14:53:02',
+          status: '处理完成'
+        },
+        {
+          id: '18',
+          name: '文本解析-说明文档.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:50',
+          endTime: '2024-08-19 14:53:05',
+          status: '处理中'
+        }
+      ],
+      // 图片解析节点：只处理图片文件（jpg）- png处理失败了所以没有
+      'image-parse': [
+        {
+          id: '19',
+          name: '图片解析-用户头像.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:30',
+          endTime: '2024-08-19 14:52:45',
+          status: '处理完成'
+        }
+      ],
+      // 音频解析节点：只处理音频文件（mp3）
+      'audio-parse': [
+        {
+          id: '20',
+          name: '音频解析-背景音乐.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:40',
+          endTime: '2024-08-19 14:52:55',
+          status: '处理完成'
+        }
+      ],
+      // 视频解析节点：只处理视频文件（mp4）
+      'video-parse': [
+        {
+          id: '21',
+          name: '视频解析-宣传视频.json',
+          type: 'json',
+          startTime: '2024-08-19 14:52:40',
+          endTime: '2024-08-19 14:53:10',
+          status: '处理完成'
+        }
+      ],
+      // Python自定义节点：合并所有解析结果
+      'python-custom': [
+        {
+          id: '22',
+          name: '合并数据-产品介绍.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:30',
+          status: '处理完成'
+        },
+        {
+          id: '23',
+          name: '合并数据-营销方案.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:35',
+          status: '处理完成'
+        },
+        {
+          id: '24',
+          name: '合并数据-用户头像.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:25',
+          status: '处理完成'
+        },
+        {
+          id: '25',
+          name: '合并数据-背景音乐.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:40',
+          status: '处理完成'
+        },
+        {
+          id: '26',
+          name: '合并数据-宣传视频.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:15',
+          endTime: '2024-08-19 14:53:45',
+          status: '处理失败'
+        }
+      ],
+      // 数据清洗节点：清洗成功处理的合并数据
+      'clean': [
+        {
+          id: '27',
+          name: '清洗数据-产品介绍.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:50',
+          endTime: '2024-08-19 14:54:05',
+          status: '处理完成'
+        },
+        {
+          id: '28',
+          name: '清洗数据-营销方案.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:50',
+          endTime: '2024-08-19 14:54:10',
+          status: '处理完成'
+        },
+        {
+          id: '29',
+          name: '清洗数据-用户头像.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:50',
+          endTime: '2024-08-19 14:54:00',
+          status: '处理完成'
+        },
+        {
+          id: '30',
+          name: '清洗数据-背景音乐.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:53:50',
+          endTime: '2024-08-19 14:54:15',
+          status: '处理完成'
+        }
+      ],
+      // 数据增强节点：增强清洗后的数据
+      'enhance': [
+        {
+          id: '31',
+          name: '增强数据-产品介绍.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:54:20',
+          endTime: '2024-08-19 14:54:35',
+          status: '处理完成'
+        },
+        {
+          id: '32',
+          name: '增强数据-营销方案.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:54:20',
+          endTime: '2024-08-19 14:54:40',
+          status: '处理完成'
+        },
         {
           id: '33',
-          name: '最终结果-1.json',
-          type: 'json',
-          startTime: '2024-08-19 14:54:10',
-          endTime: '2024-08-19 14:54:15',
+          name: '增强数据-用户头像.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:54:20',
+          endTime: '2024-08-19 14:54:30',
           status: '处理完成'
         },
         {
           id: '34',
-          name: '执行摘要-1.pdf',
+          name: '增强数据-背景音乐.pdf',
           type: 'pdf',
-          startTime: '2024-08-19 14:54:11',
-          endTime: '2024-08-19 14:54:20',
+          startTime: '2024-08-19 14:54:20',
+          endTime: '2024-08-19 14:54:45',
+          status: '处理完成'
+        }
+      ],
+      // 结束节点：最终输出文件
+      'end': [
+        {
+          id: '35',
+          name: '最终结果-产品介绍.json',
+          type: 'json',
+          startTime: '2024-08-19 14:54:50',
+          endTime: '2024-08-19 14:54:55',
           status: '处理完成'
         },
         {
-          id: '35',
-          name: '完成通知-1.txt',
-          type: 'txt',
-          startTime: '2024-08-19 14:54:12',
-          endTime: '2024-08-19 14:54:13',
+          id: '36',
+          name: '最终结果-营销方案.json',
+          type: 'json',
+          startTime: '2024-08-19 14:54:50',
+          endTime: '2024-08-19 14:55:00',
+          status: '处理完成'
+        },
+        {
+          id: '37',
+          name: '最终结果-用户头像.json',
+          type: 'json',
+          startTime: '2024-08-19 14:54:50',
+          endTime: '2024-08-19 14:54:58',
+          status: '处理完成'
+        },
+        {
+          id: '38',
+          name: '最终结果-背景音乐.json',
+          type: 'json',
+          startTime: '2024-08-19 14:54:50',
+          endTime: '2024-08-19 14:55:05',
+          status: '处理完成'
+        },
+        {
+          id: '39',
+          name: '处理报告.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:55:10',
+          endTime: '2024-08-19 14:55:15',
           status: '处理完成'
         }
       ]
@@ -619,7 +577,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
       ],
       'python-custom': [
         {
-          name: 'Python自定义节点',
+          name: 'Python2',
           status: 'completed',
           duration: '25s',
           description: '自定义脚本处理和数据合并'
@@ -1123,6 +1081,104 @@ const NodeModal: React.FC<NodeModalProps> = ({ node, isOpen, onClose }) => {
           }
         ]
       },
+      'start': {
+        'doc': `文档内容预览:
+标题: 产品介绍文档
+内容: 本文档详细介绍了我们的核心产品功能和特性...
+页数: 5页
+字数: 约2000字
+创建时间: 2024-08-19
+最后修改: 2024-08-19`,
+        'ppt': `演示文稿预览:
+标题: 营销方案演示
+幻灯片数量: 15张
+主要内容:
+- 市场分析
+- 产品定位  
+- 营销策略
+- 预算规划
+- 时间安排
+文件大小: 8.5MB`,
+        'jpg': `图片文件预览:
+文件名: 用户头像.jpg
+分辨率: 512x512像素
+文件大小: 85KB
+色彩模式: RGB
+拍摄时间: 2024-08-19
+图片描述: 用户个人头像照片，背景简洁`,
+        'png': `图片文件预览:
+文件名: 界面截图.png
+分辨率: 1920x1080像素
+文件大小: 2.3MB
+色彩模式: RGBA (支持透明)
+创建时间: 2024-08-19
+图片描述: 应用程序主界面截图`,
+        'mp3': `音频文件预览:
+文件名: 背景音乐.mp3
+时长: 3分45秒
+比特率: 320kbps
+采样率: 44.1kHz
+文件大小: 8.6MB
+音频描述: 轻松愉快的背景音乐，适合产品展示`,
+        'mp4': `视频文件预览:
+文件名: 宣传视频.mp4
+时长: 2分30秒
+分辨率: 1920x1080
+帧率: 30fps
+文件大小: 45MB
+视频描述: 产品功能演示和宣传视频`,
+        'yaml': `配置文件预览:
+workflow:
+  name: "数据处理流程"
+  version: "1.0"
+  trigger: "manual"
+  
+input:
+  source: "source_vol1"
+  max_files: 100
+  
+processing:
+  parallel: true
+  timeout: 3600`,
+        'txt': `文本文件预览:
+输入文件清单:
+1. 产品介绍.doc
+2. 营销方案.ppt  
+3. 用户头像.jpg
+4. 界面截图.png
+5. 背景音乐.mp3
+6. 宣传视频.mp4
+7. 启动配置-1.yaml
+
+总计: 8个文件
+预计处理时间: 15分钟`
+      },
+      'end': [
+        {
+          id: '33',
+          name: '最终结果-1.json',
+          type: 'json',
+          startTime: '2024-08-19 14:54:10',
+          endTime: '2024-08-19 14:54:15',
+          status: '处理完成'
+        },
+        {
+          id: '34',
+          name: '执行摘要-1.pdf',
+          type: 'pdf',
+          startTime: '2024-08-19 14:54:11',
+          endTime: '2024-08-19 14:54:20',
+          status: '处理完成'
+        },
+        {
+          id: '35',
+          name: '完成通知-1.txt',
+          type: 'txt',
+          startTime: '2024-08-19 14:54:12',
+          endTime: '2024-08-19 14:54:13',
+          status: '处理完成'
+        }
+      ]
     };
 
     // 对于非解析节点，返回原来的JSON格式
@@ -1301,6 +1357,94 @@ processing:
   const config = getNodeConfig(node.id);
   const files = getNodeFiles(node.id);
 
+  // 获取文件血缘关系映射
+  const getFileLineage = (currentNodeId: string, fileName: string) => {
+    // 定义文件血缘关系映射
+    const lineageMap: Record<string, Record<string, { nodeId: string; fileName: string }>> = {
+      // Python预处理节点的文件来源于开始节点
+      'python-preprocess': {
+        '预处理-产品介绍.doc': { nodeId: 'start', fileName: '产品介绍.doc' },
+        '预处理-营销方案.ppt': { nodeId: 'start', fileName: '营销方案.ppt' },
+        '预处理-用户头像.jpg': { nodeId: 'start', fileName: '用户头像.jpg' },
+        '预处理-界面截图.png': { nodeId: 'start', fileName: '界面截图.png' },
+        '预处理-背景音乐.mp3': { nodeId: 'start', fileName: '背景音乐.mp3' },
+        '预处理-宣传视频.mp4': { nodeId: 'start', fileName: '宣传视频.mp4' },
+        '预处理-说明文档.txt': { nodeId: 'start', fileName: '说明文档.txt' }
+      },
+      // 文本解析节点的文件来源于预处理节点的文本类文件
+      'text-parse': {
+        '文本解析-产品介绍.json': { nodeId: 'python-preprocess', fileName: '预处理-产品介绍.doc' },
+        '文本解析-营销方案.json': { nodeId: 'python-preprocess', fileName: '预处理-营销方案.ppt' },
+        '文本解析-说明文档.json': { nodeId: 'python-preprocess', fileName: '预处理-说明文档.txt' }
+      },
+      // 图片解析节点的文件来源于预处理节点的图片文件（只有jpg成功了）
+      'image-parse': {
+        '图片解析-用户头像.json': { nodeId: 'python-preprocess', fileName: '预处理-用户头像.jpg' }
+      },
+      // 音频解析节点的文件来源于预处理节点的音频文件
+      'audio-parse': {
+        '音频解析-背景音乐.json': { nodeId: 'python-preprocess', fileName: '预处理-背景音乐.mp3' }
+      },
+      // 视频解析节点的文件来源于预处理节点的视频文件
+      'video-parse': {
+        '视频解析-宣传视频.json': { nodeId: 'python-preprocess', fileName: '预处理-宣传视频.mp4' }
+      },
+      // Python自定义节点的文件来源于各个解析节点
+      'python-custom': {
+        '合并数据-产品介绍.pdf': { nodeId: 'text-parse', fileName: '文本解析-产品介绍.json' },
+        '合并数据-营销方案.pdf': { nodeId: 'text-parse', fileName: '文本解析-营销方案.json' },
+        '合并数据-用户头像.pdf': { nodeId: 'image-parse', fileName: '图片解析-用户头像.json' },
+        '合并数据-背景音乐.pdf': { nodeId: 'audio-parse', fileName: '音频解析-背景音乐.json' },
+        '合并数据-宣传视频.pdf': { nodeId: 'video-parse', fileName: '视频解析-宣传视频.json' }
+      },
+      // 数据清洗节点的文件来源于Python自定义节点（只有成功处理的）
+      'clean': {
+        '清洗数据-产品介绍.pdf': { nodeId: 'python-custom', fileName: '合并数据-产品介绍.pdf' },
+        '清洗数据-营销方案.pdf': { nodeId: 'python-custom', fileName: '合并数据-营销方案.pdf' },
+        '清洗数据-用户头像.pdf': { nodeId: 'python-custom', fileName: '合并数据-用户头像.pdf' },
+        '清洗数据-背景音乐.pdf': { nodeId: 'python-custom', fileName: '合并数据-背景音乐.pdf' }
+      },
+      // 数据增强节点的文件来源于数据清洗节点
+      'enhance': {
+        '增强数据-产品介绍.pdf': { nodeId: 'clean', fileName: '清洗数据-产品介绍.pdf' },
+        '增强数据-营销方案.pdf': { nodeId: 'clean', fileName: '清洗数据-营销方案.pdf' },
+        '增强数据-用户头像.pdf': { nodeId: 'clean', fileName: '清洗数据-用户头像.pdf' },
+        '增强数据-背景音乐.pdf': { nodeId: 'clean', fileName: '清洗数据-背景音乐.pdf' }
+      },
+      // 结束节点的文件来源于数据增强节点
+      'end': {
+        '最终结果-产品介绍.json': { nodeId: 'enhance', fileName: '增强数据-产品介绍.pdf' },
+        '最终结果-营销方案.json': { nodeId: 'enhance', fileName: '增强数据-营销方案.pdf' },
+        '最终结果-用户头像.json': { nodeId: 'enhance', fileName: '增强数据-用户头像.pdf' },
+        '最终结果-背景音乐.json': { nodeId: 'enhance', fileName: '增强数据-背景音乐.pdf' },
+        '处理报告.pdf': { nodeId: 'enhance', fileName: '增强数据-产品介绍.pdf' }
+      }
+    };
+
+    const nodeLineage = lineageMap[currentNodeId];
+    return nodeLineage ? nodeLineage[fileName] : null;
+  };
+
+  // 处理血缘跳转
+  const handleLineageClick = (file: FileItem) => {
+    const lineage = getFileLineage(node.id, file.name);
+    if (lineage) {
+      // 找到目标节点
+      const targetNode = nodes.find(n => n.id === lineage.nodeId);
+      if (targetNode) {
+        // 设置高亮文件ID（基于文件名匹配）
+        const targetFiles = getNodeFiles(lineage.nodeId);
+        const targetFile = targetFiles.find(f => f.name === lineage.fileName);
+        if (targetFile) {
+          setHighlightedFileId(targetFile.id);
+        }
+        
+        // 跳转到目标节点
+        onNodeChange(targetNode);
+      }
+    }
+  };
+
   const getFileIcon = (fileType: string) => {
     return <FileText className="w-4 h-4 text-blue-500" />;
   };
@@ -1310,9 +1454,7 @@ processing:
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
         {/* 弹窗头部 */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {node.id === 'start' ? '原始文件列表' : (config.name || node.label)}
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900">{config.name || node.label}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1321,122 +1463,39 @@ processing:
           </button>
         </div>
 
-        {/* 标签页导航 - 开始节点和结束节点不显示 */}
-        {node.id !== 'start' && node.id !== 'end' && (
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('files')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'files'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <FileText className="w-4 h-4" />
-                <span>处理结果 ({files.length})</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('config')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'config'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Settings className="w-4 h-4" />
-                <span>节点详情</span>
-              </div>
-            </button>
-          </div>
-        )}
+        {/* 标签页导航 */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('files')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'files'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <FileText className="w-4 h-4" />
+              <span>处理结果 ({files.length})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'config'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span>节点详情</span>
+            </div>
+          </button>
+        </div>
 
         {/* 标签页内容 */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {/* 开始节点和结束节点直接显示文件列表 */}
-          {(node.id === 'start' || node.id === 'end') && !previewFile && (
-            <div>
-              {files.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          文件名
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          文件类型
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          操作
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {files.map((file) => (
-                        <tr key={file.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-3">
-                              {getFileIcon(file.type)}
-                              <span className="text-sm text-gray-900">{file.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {file.type}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                className="text-green-600 hover:text-green-800 cursor-pointer"
-                                title="查看"
-                                onClick={() => handlePreviewFile(file)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    {node.id === 'start' ? '暂无原始文件' : '暂无输出文件'}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 开始节点和结束节点的文件预览 */}
-          {(node.id === 'start' || node.id === 'end') && previewFile && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-medium text-gray-900">文件预览: {previewFile.name}</h4>
-                <button 
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  onClick={closePreview}
-                >
-                  返回列表
-                </button>
-              </div>
-              
-              <div className="bg-white rounded border p-4">
-                <h5 className="text-sm font-medium text-gray-900 mb-2">文件信息:</h5>
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-96">
-                  {getFileResultContent(previewFile)}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* 其他节点的标签页内容 */}
-          {node.id !== 'start' && node.id !== 'end' && activeTab === 'config' && (
+          {activeTab === 'config' && (
             <div className="space-y-6">
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">基本信息</h4>
@@ -1466,7 +1525,7 @@ processing:
             </div>
           )}
 
-          {node.id !== 'start' && node.id !== 'end' && activeTab === 'files' && !previewFile && (
+          {activeTab === 'files' && !previewFile && (
             <div key={node.id}>
               {files.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -1495,11 +1554,20 @@ processing:
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {files.map((file) => (
-                        <tr key={file.id} className="hover:bg-gray-50">
+                        <tr 
+                          key={file.id} 
+                          className={`hover:bg-gray-50 ${
+                            highlightedFileId === file.id ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''
+                          }`}
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               {getFileIcon(file.type)}
-                              <span className="text-sm text-gray-900">{file.name}</span>
+                              <span className={`text-sm ${
+                                highlightedFileId === file.id ? 'text-yellow-900 font-medium' : 'text-gray-900'
+                              }`}>
+                                {file.name}
+                              </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1534,6 +1602,15 @@ processing:
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {getFileLineage(node.id, file.name) && (
+                                <button 
+                                  className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                                  title="查看数据血缘"
+                                  onClick={() => handleLineageClick(file)}
+                                >
+                                  <GitBranch className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1550,7 +1627,7 @@ processing:
             </div>
           )}
 
-          {node.id !== 'start' && node.id !== 'end' && activeTab === 'files' && previewFile && (
+          {activeTab === 'files' && previewFile && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-medium text-gray-900">文件预览: {previewFile.name}</h4>
@@ -1651,30 +1728,19 @@ const WorkflowDiagram: React.FC = () => {
   const [zoom, setZoom] = useState(100);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
 
-  // 定义节点类型和对应的颜色
-  const nodeTypeColors: Record<NodeType, string> = {
-    'start-end': 'bg-green-100 border-green-300 text-green-800',
-    'python': 'bg-yellow-100 border-yellow-300 text-yellow-800',
-    'text-parse': 'bg-blue-100 border-blue-300 text-blue-800',
-    'image-parse': 'bg-purple-100 border-purple-300 text-purple-800',
-    'audio-parse': 'bg-orange-100 border-orange-300 text-orange-800',
-    'video-parse': 'bg-pink-100 border-pink-300 text-pink-800',
-    'data-clean': 'bg-indigo-100 border-indigo-300 text-indigo-800',
-    'data-enhance': 'bg-teal-100 border-teal-300 text-teal-800'
-  };
-
-  const nodes: WorkflowNode[] = [
-    { id: 'start', label: '开始节点', x: 50, y: 200, type: 'start-end' },
-    { id: 'python-preprocess', label: 'Python自定义节点', x: 200, y: 200, type: 'python' },
-    { id: 'text-parse', label: '文本解析节点', x: 350, y: 120, type: 'text-parse' },
-    { id: 'image-parse', label: '图片解析节点', x: 350, y: 160, type: 'image-parse' },
-    { id: 'audio-parse', label: '音频解析节点', x: 350, y: 200, type: 'audio-parse' },
-    { id: 'video-parse', label: '视频解析节点', x: 350, y: 240, type: 'video-parse' },
-    { id: 'python-custom', label: 'Python自定义节点', x: 500, y: 200, type: 'python' },
-    { id: 'clean', label: '数据清洗', x: 650, y: 200, type: 'data-clean' },
-    { id: 'enhance', label: '数据增强', x: 800, y: 200, type: 'data-enhance' },
-    { id: 'end', label: '结束节点', x: 950, y: 200, type: 'start-end' }
+  const nodes = [
+    { id: 'start', label: '开始节点', x: 50, y: 200, color: 'bg-green-100 border-green-300 text-green-800' },
+    { id: 'python-preprocess', label: 'Python1', x: 200, y: 200, color: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
+    { id: 'text-parse', label: '文本解析节点', x: 350, y: 120, color: 'bg-blue-100 border-blue-300 text-blue-800' },
+    { id: 'image-parse', label: '图片解析节点', x: 350, y: 160, color: 'bg-purple-100 border-purple-300 text-purple-800' },
+    { id: 'audio-parse', label: '音频解析节点', x: 350, y: 200, color: 'bg-orange-100 border-orange-300 text-orange-800' },
+    { id: 'video-parse', label: '视频解析节点', x: 350, y: 240, color: 'bg-pink-100 border-pink-300 text-pink-800' },
+    { id: 'python-custom', label: 'Python2', x: 500, y: 200, color: 'bg-amber-100 border-amber-300 text-amber-800' },
+    { id: 'clean', label: '数据清洗', x: 650, y: 200, color: 'bg-indigo-100 border-indigo-300 text-indigo-800' },
+    { id: 'enhance', label: '数据增强', x: 800, y: 200, color: 'bg-teal-100 border-teal-300 text-teal-800' },
+    { id: 'end', label: '结束节点', x: 950, y: 200, color: 'bg-green-100 border-green-300 text-green-800' }
   ];
 
   const connections = [
@@ -1732,6 +1798,16 @@ const WorkflowDiagram: React.FC = () => {
     );
   };
 
+  // 清除高亮状态的定时器
+  useEffect(() => {
+    if (highlightedFileId) {
+      const timer = setTimeout(() => {
+        setHighlightedFileId(null);
+      }, 3000); // 3秒后清除高亮
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedFileId]);
+
   return (
     <>
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -1765,7 +1841,7 @@ const WorkflowDiagram: React.FC = () => {
                 <g key={node.id}>
                   <foreignObject x={node.x} y={node.y} width="120" height="30">
                     <div 
-                      className={`px-3 py-1 rounded border text-xs font-medium text-center cursor-pointer hover:shadow-md transition-shadow ${nodeTypeColors[node.type as NodeType]}`}
+                      className={`px-3 py-1 rounded border text-xs font-medium text-center cursor-pointer hover:shadow-md transition-shadow ${node.color}`}
                       onClick={() => handleNodeClick(node)}
                     >
                       {node.label}
@@ -1784,10 +1860,6 @@ const WorkflowDiagram: React.FC = () => {
               <span>开始/结束</span>
             </div>
             <div className="flex items-center space-x-1">
-              <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
-              <span>Python自定义</span>
-            </div>
-            <div className="flex items-center space-x-1">
               <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
               <span>文本解析</span>
             </div>
@@ -1802,6 +1874,14 @@ const WorkflowDiagram: React.FC = () => {
             <div className="flex items-center space-x-1">
               <div className="w-3 h-3 bg-pink-100 border border-pink-300 rounded"></div>
               <span>视频解析</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
+              <span>Python预处理</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-amber-100 border border-amber-300 rounded"></div>
+              <span>Python自定义</span>
             </div>
             <div className="flex items-center space-x-1">
               <div className="w-3 h-3 bg-indigo-100 border border-indigo-300 rounded"></div>
@@ -1820,6 +1900,10 @@ const WorkflowDiagram: React.FC = () => {
         node={selectedNode}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        nodes={nodes}
+        onNodeChange={handleNodeClick}
+        highlightedFileId={highlightedFileId}
+        setHighlightedFileId={setHighlightedFileId}
       />
     </>
   );
