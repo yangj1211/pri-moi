@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Settings, X, Eye, GitBranch } from 'lucide-react';
+import { FileText, Settings, X, Eye, GitBranch, GitMerge } from 'lucide-react';
 
 interface FileItem {
   id: string;
@@ -1425,6 +1425,73 @@ processing:
     return nodeLineage ? nodeLineage[fileName] : null;
   };
 
+  // 获取下游血缘关系映射
+  const getDownstreamLineage = (currentNodeId: string, fileName: string) => {
+    // 定义下游血缘关系映射（被哪些文件使用）
+    const downstreamMap: Record<string, Record<string, { nodeId: string; fileName: string }[]>> = {
+      // 开始节点的文件被预处理节点使用
+      'start': {
+        '产品介绍.doc': [{ nodeId: 'python-preprocess', fileName: '预处理-产品介绍.doc' }],
+        '营销方案.ppt': [{ nodeId: 'python-preprocess', fileName: '预处理-营销方案.ppt' }],
+        '用户头像.jpg': [{ nodeId: 'python-preprocess', fileName: '预处理-用户头像.jpg' }],
+        '界面截图.png': [{ nodeId: 'python-preprocess', fileName: '预处理-界面截图.png' }],
+        '背景音乐.mp3': [{ nodeId: 'python-preprocess', fileName: '预处理-背景音乐.mp3' }],
+        '宣传视频.mp4': [{ nodeId: 'python-preprocess', fileName: '预处理-宣传视频.mp4' }],
+        '说明文档.txt': [{ nodeId: 'python-preprocess', fileName: '预处理-说明文档.txt' }]
+      },
+      // 预处理节点的文件被各个解析节点使用
+      'python-preprocess': {
+        '预处理-产品介绍.doc': [{ nodeId: 'text-parse', fileName: '文本解析-产品介绍.json' }],
+        '预处理-营销方案.ppt': [{ nodeId: 'text-parse', fileName: '文本解析-营销方案.json' }],
+        '预处理-用户头像.jpg': [{ nodeId: 'image-parse', fileName: '图片解析-用户头像.json' }],
+        '预处理-说明文档.txt': [{ nodeId: 'text-parse', fileName: '文本解析-说明文档.json' }],
+        '预处理-背景音乐.mp3': [{ nodeId: 'audio-parse', fileName: '音频解析-背景音乐.json' }],
+        '预处理-宣传视频.mp4': [{ nodeId: 'video-parse', fileName: '视频解析-宣传视频.json' }]
+      },
+      // 各个解析节点的文件被Python自定义节点使用
+      'text-parse': {
+        '文本解析-产品介绍.json': [{ nodeId: 'python-custom', fileName: '合并数据-产品介绍.pdf' }],
+        '文本解析-营销方案.json': [{ nodeId: 'python-custom', fileName: '合并数据-营销方案.pdf' }]
+      },
+      'image-parse': {
+        '图片解析-用户头像.json': [{ nodeId: 'python-custom', fileName: '合并数据-用户头像.pdf' }]
+      },
+      'audio-parse': {
+        '音频解析-背景音乐.json': [{ nodeId: 'python-custom', fileName: '合并数据-背景音乐.pdf' }]
+      },
+      'video-parse': {
+        '视频解析-宣传视频.json': [{ nodeId: 'python-custom', fileName: '合并数据-宣传视频.pdf' }]
+      },
+      // Python自定义节点的文件被数据清洗节点使用
+      'python-custom': {
+        '合并数据-产品介绍.pdf': [{ nodeId: 'clean', fileName: '清洗数据-产品介绍.pdf' }],
+        '合并数据-营销方案.pdf': [{ nodeId: 'clean', fileName: '清洗数据-营销方案.pdf' }],
+        '合并数据-用户头像.pdf': [{ nodeId: 'clean', fileName: '清洗数据-用户头像.pdf' }],
+        '合并数据-背景音乐.pdf': [{ nodeId: 'clean', fileName: '清洗数据-背景音乐.pdf' }]
+      },
+      // 数据清洗节点的文件被数据增强节点使用
+      'clean': {
+        '清洗数据-产品介绍.pdf': [{ nodeId: 'enhance', fileName: '增强数据-产品介绍.pdf' }],
+        '清洗数据-营销方案.pdf': [{ nodeId: 'enhance', fileName: '增强数据-营销方案.pdf' }],
+        '清洗数据-用户头像.pdf': [{ nodeId: 'enhance', fileName: '增强数据-用户头像.pdf' }],
+        '清洗数据-背景音乐.pdf': [{ nodeId: 'enhance', fileName: '增强数据-背景音乐.pdf' }]
+      },
+      // 数据增强节点的文件被结束节点使用
+      'enhance': {
+        '增强数据-产品介绍.pdf': [
+          { nodeId: 'end', fileName: '最终结果-产品介绍.json' },
+          { nodeId: 'end', fileName: '处理报告.pdf' }
+        ],
+        '增强数据-营销方案.pdf': [{ nodeId: 'end', fileName: '最终结果-营销方案.json' }],
+        '增强数据-用户头像.pdf': [{ nodeId: 'end', fileName: '最终结果-用户头像.json' }],
+        '增强数据-背景音乐.pdf': [{ nodeId: 'end', fileName: '最终结果-背景音乐.json' }]
+      }
+    };
+
+    const nodeDownstream = downstreamMap[currentNodeId];
+    return nodeDownstream ? nodeDownstream[fileName] : null;
+  };
+
   // 处理血缘跳转
   const handleLineageClick = (file: FileItem) => {
     const lineage = getFileLineage(node.id, file.name);
@@ -1435,6 +1502,27 @@ processing:
         // 设置高亮文件ID（基于文件名匹配）
         const targetFiles = getNodeFiles(lineage.nodeId);
         const targetFile = targetFiles.find(f => f.name === lineage.fileName);
+        if (targetFile) {
+          setHighlightedFileId(targetFile.id);
+        }
+        
+        // 跳转到目标节点
+        onNodeChange(targetNode);
+      }
+    }
+  };
+
+  // 处理下游血缘跳转
+  const handleDownstreamLineageClick = (file: FileItem) => {
+    const downstreams = getDownstreamLineage(node.id, file.name);
+    if (downstreams && downstreams.length > 0) {
+      // 如果有多个下游，跳转到第一个
+      const firstDownstream = downstreams[0];
+      const targetNode = nodes.find(n => n.id === firstDownstream.nodeId);
+      if (targetNode) {
+        // 设置高亮文件ID（基于文件名匹配）
+        const targetFiles = getNodeFiles(firstDownstream.nodeId);
+        const targetFile = targetFiles.find(f => f.name === firstDownstream.fileName);
         if (targetFile) {
           setHighlightedFileId(targetFile.id);
         }
@@ -1465,32 +1553,66 @@ processing:
 
         {/* 标签页导航 */}
         <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('files')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'files'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <FileText className="w-4 h-4" />
-              <span>处理结果 ({files.length})</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'config'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>节点详情</span>
-            </div>
-          </button>
+          {node.id !== 'start' && node.id !== 'end' && (
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'files'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>处理结果 ({files.length})</span>
+              </div>
+            </button>
+          )}
+          {node.id === 'start' && (
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'files'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>原始文件列表 ({files.length})</span>
+              </div>
+            </button>
+          )}
+          {node.id === 'end' && (
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'files'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>最终输出文件 ({files.length})</span>
+              </div>
+            </button>
+          )}
+          {node.id !== 'start' && node.id !== 'end' && (
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'config'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Settings className="w-4 h-4" />
+                <span>节点配置</span>
+              </div>
+            </button>
+          )}
         </div>
 
         {/* 标签页内容 */}
@@ -1535,18 +1657,24 @@ processing:
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           文件名
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          状态
-                        </th>
+                        {node.id !== 'start' && node.id !== 'end' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            状态
+                          </th>
+                        )}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           文件类型
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          开始时间
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          结束时间
-                        </th>
+                        {node.id !== 'start' && node.id !== 'end' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            开始时间
+                          </th>
+                        )}
+                        {node.id !== 'start' && node.id !== 'end' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            结束时间
+                          </th>
+                        )}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作
                         </th>
@@ -1570,20 +1698,26 @@ processing:
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(file.status)}`}>
-                              {file.status}
-                            </span>
-                          </td>
+                          {node.id !== 'start' && node.id !== 'end' && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(file.status)}`}>
+                                {file.status}
+                              </span>
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {file.type}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {file.startTime}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {file.endTime}
-                          </td>
+                          {node.id !== 'start' && node.id !== 'end' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {file.startTime}
+                            </td>
+                          )}
+                          {node.id !== 'start' && node.id !== 'end' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {file.endTime}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex items-center space-x-2">
                               <button 
@@ -1602,13 +1736,24 @@ processing:
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {getFileLineage(node.id, file.name) && (
+                              {/* 开始节点不显示上游血缘按钮 */}
+                              {node.id !== 'start' && getFileLineage(node.id, file.name) && (
                                 <button 
                                   className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                                  title="查看数据血缘"
+                                  title="查看上游血缘"
                                   onClick={() => handleLineageClick(file)}
                                 >
                                   <GitBranch className="w-4 h-4" />
+                                </button>
+                              )}
+                              {/* 结束节点不显示下游血缘按钮 */}
+                              {node.id !== 'end' && getDownstreamLineage(node.id, file.name) && (
+                                <button 
+                                  className="text-purple-600 hover:text-purple-800 cursor-pointer"
+                                  title="查看下游血缘"
+                                  onClick={() => handleDownstreamLineageClick(file)}
+                                >
+                                  <GitMerge className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
@@ -1895,7 +2040,7 @@ const WorkflowDiagram: React.FC = () => {
         </div>
       </div>
 
-      {/* 节点详情弹窗 */}
+      {/* 节点配置弹窗 */}
       <NodeModal
         node={selectedNode}
         isOpen={isModalOpen}

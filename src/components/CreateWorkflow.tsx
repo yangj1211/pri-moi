@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Minus, Maximize2, Bug, Play, X, Save, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Maximize2, Bug, Play, X, Save, GripVertical, Upload } from 'lucide-react';
 
 interface CreateWorkflowProps {
   onBack: () => void;
@@ -10,12 +10,23 @@ interface SchemaField {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object';
   description: string;
   required: boolean;
+  itemType?: 'string' | 'number' | 'boolean' | 'object'; // 数组元素类型
+  properties?: SchemaField[]; // Object类型的嵌套字段
+  collapsed?: boolean; // 折叠状态
 }
 
 interface InfoExtractConfig {
   nodeName: string;
   model: string;
   schema: SchemaField[];
+}
+
+// 添加Python节点配置接口
+interface PythonNodeConfig {
+  nodeName: string;
+  inputValue: string;
+  outputValue: string;
+  pythonScript: string;
 }
 
 interface WorkflowNode {
@@ -25,6 +36,7 @@ interface WorkflowNode {
   y: number;
   type: 'start-end' | 'python' | 'text-parse' | 'image-parse' | 'audio-parse' | 'video-parse' | 'data-clean' | 'data-enhance' | 'info-extract';
   config?: InfoExtractConfig;
+  pythonConfig?: PythonNodeConfig; // 添加Python节点配置
 }
 
 const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
@@ -50,10 +62,10 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
   const [connectionStates, setConnectionStates] = useState<Record<string, 'enabled' | 'disabled'>>({});
   const [runningConnections, setRunningConnections] = useState<Set<string>>(new Set());
 
-  // 信息提取节点配置弹窗状态
+  // 结构化提取节点配置弹窗状态
   const [showInfoExtractModal, setShowInfoExtractModal] = useState(false);
   const [currentInfoExtractConfig, setCurrentInfoExtractConfig] = useState<InfoExtractConfig>({
-    nodeName: '信息提取节点',
+    nodeName: '结构化提取节点',
     model: 'gpt-4',
     schema: []
   });
@@ -62,8 +74,21 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
   const [jsonConfig, setJsonConfig] = useState<string>('');
   const [jsonError, setJsonError] = useState<string>('');
 
+  // 添加Python节点配置弹窗状态
+  const [showPythonModal, setShowPythonModal] = useState(false);
+  const [currentPythonConfig, setCurrentPythonConfig] = useState<PythonNodeConfig>({
+    nodeName: 'Python自定义节点',
+    inputValue: 'documents',
+    outputValue: 'documents',
+    pythonScript: ''
+  });
+  const [editingPythonNodeId, setEditingPythonNodeId] = useState<string>('');
+
   // JSON全屏编辑状态
   const [isJsonFullscreen, setIsJsonFullscreen] = useState(false);
+
+  // Python脚本全屏编辑状态
+  const [isPythonFullscreen, setIsPythonFullscreen] = useState(false);
 
   // 拖拽排序状态
   const [draggedFieldIndex, setDraggedFieldIndex] = useState<number | null>(null);
@@ -74,7 +99,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     { id: 'start', label: '开始节点', x: 80, y: 250, type: 'start-end' },
     { id: 'python1', label: 'python1', x: 280, y: 250, type: 'python' },
     { id: 'text-parse', label: '文本解析节点', x: 520, y: 120, type: 'text-parse' },
-    { id: 'info-extract', label: '信息提取节点', x: 760, y: 120, type: 'info-extract' },
+    { id: 'info-extract', label: '结构化提取节点', x: 760, y: 120, type: 'info-extract' },
     { id: 'text-python', label: 'python自定义节点', x: 1000, y: 120, type: 'python' },
     { id: 'image-parse', label: '图片解析节点', x: 520, y: 220, type: 'image-parse' },
     { id: 'audio-parse', label: '音频解析节点', x: 520, y: 320, type: 'audio-parse' },
@@ -468,7 +493,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     setIsAutoExecuting(false);
   };
 
-  // 处理信息提取节点配置
+  // 处理结构化提取节点配置
   const handleInfoExtractNodeClick = (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (node && node.type === 'info-extract') {
@@ -485,14 +510,50 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
       // 初始化JSON配置
       const schema = {
         type: 'object',
-        properties: {} as Record<string, any>
+        properties: {} as Record<string, any>,
+        required: [] as string[]
       };
       config.schema.forEach(field => {
         if (field.name) {
-          schema.properties[field.name] = {
-            type: field.type,
-            description: field.description
-          };
+          if (field.type === 'array') {
+            schema.properties[field.name] = {
+              type: field.type,
+              items: {
+                type: field.itemType || 'string'
+              },
+              description: field.description
+            };
+          } else if (field.type === 'object' && field.properties && field.properties.length > 0) {
+            const objectProperties: Record<string, any> = {};
+            const objectRequired: string[] = [];
+            
+            field.properties.forEach(prop => {
+              if (prop.name) {
+                objectProperties[prop.name] = {
+                  type: prop.type,
+                  description: prop.description
+                };
+                if (prop.required) {
+                  objectRequired.push(prop.name);
+                }
+              }
+            });
+            
+            schema.properties[field.name] = {
+              type: field.type,
+              properties: objectProperties,
+              required: objectRequired,
+              description: field.description
+            };
+          } else {
+            schema.properties[field.name] = {
+              type: field.type,
+              description: field.description
+            };
+          }
+          if (field.required) {
+            schema.required.push(field.name);
+          }
         }
       });
       setJsonConfig(JSON.stringify(schema, null, 2));
@@ -501,17 +562,55 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     }
   };
 
+  // 处理Python节点配置
+  const handlePythonNodeClick = (nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node && node.type === 'python') {
+      setEditingPythonNodeId(nodeId);
+      const config = node.pythonConfig || {
+        nodeName: node.label,
+        inputValue: 'documents',
+        outputValue: 'documents',
+        pythonScript: ''
+      };
+      setCurrentPythonConfig(config);
+      setShowPythonModal(true);
+    }
+  };
+
   // 添加新的schema字段
-  const addSchemaField = () => {
+  const addSchemaField = (afterIndex?: number, fieldType: SchemaField['type'] = 'string') => {
     setCurrentInfoExtractConfig(prev => {
-      const newConfig = {
-        ...prev,
-        schema: [...prev.schema, {
+      const newField: SchemaField = {
+        name: '',
+        type: fieldType,
+        description: '',
+        required: true,
+        itemType: 'string' as SchemaField['itemType'] // 默认数组元素类型
+      };
+      
+      // 如果是Object类型，自动添加一个默认属性
+      if (fieldType === 'object') {
+        newField.properties = [{
           name: '',
           type: 'string' as SchemaField['type'],
           description: '',
           required: true
-        }]
+        }];
+      }
+      
+      const newSchema = [...prev.schema];
+      if (afterIndex !== undefined) {
+        // 在指定位置后插入
+        newSchema.splice(afterIndex + 1, 0, newField);
+      } else {
+        // 添加到末尾
+        newSchema.push(newField);
+      }
+      
+      const newConfig = {
+        ...prev,
+        schema: newSchema
       };
       // 实时更新JSON配置
       updateJsonFromForm(newConfig);
@@ -524,9 +623,29 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     setCurrentInfoExtractConfig(prev => {
       const newConfig = {
         ...prev,
-        schema: prev.schema.map((item, i) => 
-          i === index ? { ...item, ...field } : item
-        )
+        schema: prev.schema.map((item, i) => {
+          if (i === index) {
+            const updatedField = { ...item, ...field };
+            
+            // 如果类型改变为object且还没有properties，自动添加一个默认属性
+            if (field.type === 'object' && !updatedField.properties) {
+              updatedField.properties = [{
+                name: '',
+                type: 'string' as SchemaField['type'],
+                description: '',
+                required: true
+              }];
+            }
+            
+            // 如果类型改变为非object，清除properties
+            if (field.type && field.type !== 'object') {
+              delete updatedField.properties;
+            }
+            
+            return updatedField;
+          }
+          return item;
+        })
       };
       // 实时更新JSON配置
       updateJsonFromForm(newConfig);
@@ -551,15 +670,51 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
   const updateJsonFromForm = (config: InfoExtractConfig) => {
     const schema = {
       type: 'object',
-      properties: {} as Record<string, any>
+      properties: {} as Record<string, any>,
+      required: [] as string[]
     };
 
     config.schema.forEach(field => {
       if (field.name) {
-        schema.properties[field.name] = {
-          type: field.type,
-          description: field.description
-        };
+        if (field.type === 'array') {
+          schema.properties[field.name] = {
+            type: field.type,
+            items: {
+              type: field.itemType || 'string'
+            },
+            description: field.description
+          };
+        } else if (field.type === 'object' && field.properties && field.properties.length > 0) {
+          const objectProperties: Record<string, any> = {};
+          const objectRequired: string[] = [];
+          
+          field.properties.forEach(prop => {
+            if (prop.name) {
+              objectProperties[prop.name] = {
+                type: prop.type,
+                description: prop.description
+              };
+              if (prop.required) {
+                objectRequired.push(prop.name);
+              }
+            }
+          });
+          
+          schema.properties[field.name] = {
+            type: field.type,
+            properties: objectProperties,
+            required: objectRequired,
+            description: field.description
+          };
+        } else {
+          schema.properties[field.name] = {
+            type: field.type,
+            description: field.description
+          };
+        }
+        if (field.required) {
+          schema.required.push(field.name);
+        }
       }
     });
 
@@ -578,14 +733,39 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
       }
 
       const newSchema: SchemaField[] = [];
+      const requiredFields = parsed.required || [];
 
       Object.entries(parsed.properties).forEach(([name, prop]: [string, any]) => {
-        newSchema.push({
+        const schemaField: SchemaField = {
           name,
           type: prop.type || 'string',
           description: prop.description || '',
-          required: true // 所有字段都是必填的
-        });
+          required: requiredFields.includes(name)
+        };
+
+        // 如果是数组类型，解析items字段
+        if (prop.type === 'array' && prop.items && prop.items.type) {
+          schemaField.itemType = prop.items.type;
+        }
+
+        // 如果是对象类型，解析properties字段
+        if (prop.type === 'object' && prop.properties) {
+          const objectProperties: SchemaField[] = [];
+          const objectRequired = prop.required || [];
+          
+          Object.entries(prop.properties).forEach(([propName, propDef]: [string, any]) => {
+            objectProperties.push({
+              name: propName,
+              type: propDef.type || 'string',
+              description: propDef.description || '',
+              required: objectRequired.includes(propName)
+            });
+          });
+          
+          schemaField.properties = objectProperties;
+        }
+
+        newSchema.push(schemaField);
       });
 
       setCurrentInfoExtractConfig(prev => ({
@@ -612,7 +792,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     updateFormFromJson(value);
   };
 
-  // 保存信息提取节点配置
+  // 保存结构化提取节点配置
   const saveInfoExtractConfig = () => {
     // 如果是JSON模式且有错误，不保存
     if (configMode === 'json' && jsonError) {
@@ -633,19 +813,71 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     setShowInfoExtractModal(false);
   };
 
+  // 保存Python节点配置
+  const savePythonConfig = () => {
+    setNodes(prevNodes => 
+      prevNodes.map(node => 
+        node.id === editingPythonNodeId 
+          ? { 
+              ...node, 
+              label: currentPythonConfig.nodeName,
+              pythonConfig: currentPythonConfig 
+            }
+          : node
+      )
+    );
+    setShowPythonModal(false);
+  };
+
   // 生成JSON Schema预览
   const generateJsonSchema = () => {
     const schema = {
       type: 'object',
-      properties: {} as Record<string, any>
+      properties: {} as Record<string, any>,
+      required: [] as string[]
     };
 
     currentInfoExtractConfig.schema.forEach(field => {
       if (field.name) {
-        schema.properties[field.name] = {
-          type: field.type,
-          description: field.description
-        };
+        if (field.type === 'array') {
+          schema.properties[field.name] = {
+            type: field.type,
+            items: {
+              type: field.itemType || 'string'
+            },
+            description: field.description
+          };
+        } else if (field.type === 'object' && field.properties && field.properties.length > 0) {
+          const objectProperties: Record<string, any> = {};
+          const objectRequired: string[] = [];
+          
+          field.properties.forEach(prop => {
+            if (prop.name) {
+              objectProperties[prop.name] = {
+                type: prop.type,
+                description: prop.description
+              };
+              if (prop.required) {
+                objectRequired.push(prop.name);
+              }
+            }
+          });
+          
+          schema.properties[field.name] = {
+            type: field.type,
+            properties: objectProperties,
+            required: objectRequired,
+            description: field.description
+          };
+        } else {
+          schema.properties[field.name] = {
+            type: field.type,
+            description: field.description
+          };
+        }
+        if (field.required) {
+          schema.required.push(field.name);
+        }
       }
     });
 
@@ -1291,6 +1523,97 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
     setDragOverIndex(null);
   };
 
+  // 添加Object类型的属性
+  const addObjectProperty = (fieldIndex: number) => {
+    setCurrentInfoExtractConfig(prev => {
+      const newConfig = {
+        ...prev,
+        schema: prev.schema.map((field, index) => {
+          if (index === fieldIndex) {
+            const properties = field.properties || [];
+            return {
+              ...field,
+              properties: [...properties, {
+                name: '',
+                type: 'string' as SchemaField['type'],
+                description: '',
+                required: false // 新添加的属性默认为非必填
+              }]
+            };
+          }
+          return field;
+        })
+      };
+      // 实时更新JSON配置
+      updateJsonFromForm(newConfig);
+      return newConfig;
+    });
+  };
+
+  // 删除Object类型的属性
+  const removeObjectProperty = (fieldIndex: number, propertyIndex: number) => {
+    setCurrentInfoExtractConfig(prev => {
+      const newConfig = {
+        ...prev,
+        schema: prev.schema.map((field, index) => {
+          if (index === fieldIndex && field.properties) {
+            return {
+              ...field,
+              properties: field.properties.filter((_, i) => i !== propertyIndex)
+            };
+          }
+          return field;
+        })
+      };
+      // 实时更新JSON配置
+      updateJsonFromForm(newConfig);
+      return newConfig;
+    });
+  };
+
+  // 更新Object类型的属性
+  const updateObjectProperty = (fieldIndex: number, propertyIndex: number, updates: Partial<SchemaField>) => {
+    setCurrentInfoExtractConfig(prev => {
+      const newConfig = {
+        ...prev,
+        schema: prev.schema.map((field, index) => {
+          if (index === fieldIndex && field.properties) {
+            return {
+              ...field,
+              properties: field.properties.map((property, i) => 
+                i === propertyIndex ? { ...property, ...updates } : property
+              )
+            };
+          }
+          return field;
+        })
+      };
+      // 实时更新JSON配置
+      updateJsonFromForm(newConfig);
+      return newConfig;
+    });
+  };
+
+  // 处理Python脚本上传
+  const handlePythonScriptUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.name.endsWith('.py')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setCurrentPythonConfig(prev => ({
+          ...prev,
+          pythonScript: content
+        }));
+      };
+      reader.readAsText(file);
+    } else {
+      alert('请选择.py文件');
+    }
+    // 清空input值，允许重复上传同一文件
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 顶部导航 */}
@@ -1683,10 +2006,14 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
                           className={`px-3 py-1 rounded border text-xs font-medium text-center cursor-pointer hover:shadow-md transition-all relative ${getDebugNodeStyle(node.id)}`}
                           title={node.type === 'info-extract' && node.config && node.config.model 
                             ? `${node.label}\n模型: ${node.config.model}` 
+                            : node.type === 'python' && node.pythonConfig
+                            ? `${node.label}\n输入: ${node.pythonConfig.inputValue}\n输出: ${node.pythonConfig.outputValue}`
                             : node.label}
                           onClick={() => {
                             if (node.type === 'info-extract') {
                               handleInfoExtractNodeClick(node.id);
+                            } else if (node.type === 'python') {
+                              handlePythonNodeClick(node.id);
                             }
                           }}
                         >
@@ -1700,9 +2027,13 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
                           {debugProgress[node.id] === 'error' && (
                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
                           )}
-                          {/* 信息提取节点配置指示器 */}
+                          {/* 结构化提取节点配置指示器 */}
                           {node.type === 'info-extract' && node.config && node.config.schema.length > 0 && (
                             <div className="absolute -top-1 -left-1 w-3 h-3 bg-cyan-500 rounded-full"></div>
+                          )}
+                          {/* Python节点配置指示器 */}
+                          {node.type === 'python' && node.pythonConfig && node.pythonConfig.pythonScript && (
+                            <div className="absolute -top-1 -left-1 w-3 h-3 bg-yellow-500 rounded-full"></div>
                           )}
                           {/* 模型配置指示器 */}
                           {node.type === 'info-extract' && node.config && node.config.model && (
@@ -1754,13 +2085,13 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* 信息提取节点配置弹窗 */}
+      {/* 结构化提取节点配置弹窗 */}
       {showInfoExtractModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-[800px] max-h-[80vh] overflow-hidden">
             {/* 弹窗头部 */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">配置信息提取节点</h2>
+              <h2 className="text-lg font-semibold text-gray-900">配置结构化提取节点</h2>
               <button
                 onClick={() => setShowInfoExtractModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -1858,104 +2189,453 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
                     <label className="block text-sm font-medium text-gray-700">
                       Schema字段配置
                     </label>
-                    <button
-                      onClick={addSchemaField}
-                      className="flex items-center px-3 py-1 bg-cyan-600 text-white text-sm rounded hover:bg-cyan-700"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      添加字段
-                    </button>
                   </div>
 
                   {/* Schema字段列表 */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {currentInfoExtractConfig.schema.map((field, index) => (
-                      <div 
-                        key={index} 
-                        className={`border border-gray-200 rounded-lg p-4 transition-all ${
-                          draggedFieldIndex === index ? 'opacity-50 scale-95' : ''
-                        } ${
-                          dragOverIndex === index ? 'border-cyan-400 bg-cyan-50' : ''
-                        }`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <div 
-                              className="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-600 cursor-move"
-                              title="拖拽排序"
+                      <div key={index} className="space-y-2">
+                        {/* 主字段行 */}
+                        <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white">
+                          {/* 折叠按钮 */}
+                          {field.type === 'object' && (
+                            <button
+                              onClick={() => {
+                                const newSchema = [...currentInfoExtractConfig.schema];
+                                newSchema[index] = {
+                                  ...newSchema[index],
+                                  collapsed: !newSchema[index].collapsed
+                                };
+                                setCurrentInfoExtractConfig(prev => ({
+                                  ...prev,
+                                  schema: newSchema
+                                }));
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
                             >
-                              <GripVertical className="w-4 h-4" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">字段 {index + 1}</span>
-                          </div>
-                          <button
-                            onClick={() => removeSchemaField(index)}
-                            className="text-red-500 hover:text-red-700"
+                              {field.collapsed ? '▶' : '▼'}
+                            </button>
+                          )}
+                          
+                          {/* 字段名称 */}
+                          <input
+                            type="text"
+                            value={field.name}
+                            onChange={(e) => updateSchemaField(index, { name: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                            placeholder="Field name"
+                          />
+                          
+                          {/* 字段类型 */}
+                          <select
+                            value={field.type}
+                            onChange={(e) => updateSchemaField(index, { type: e.target.value as SchemaField['type'] })}
+                            className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[120px]"
                           >
-                            <X className="w-4 h-4" />
-                          </button>
+                            <option value="string">String</option>
+                            <option value="number">Number</option>
+                            <option value="boolean">Boolean</option>
+                            <option value="object">Object</option>
+                            <option value="array">Array</option>
+                          </select>
+                          
+                          {/* 数组元素类型 */}
+                          {field.type === 'array' && (
+                            <>
+                              <span className="text-gray-400">/</span>
+                              <select
+                                value={field.itemType || 'string'}
+                                onChange={(e) => updateSchemaField(index, { itemType: e.target.value as SchemaField['itemType'] })}
+                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[120px] bg-blue-50"
+                              >
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="object">Object</option>
+                              </select>
+                            </>
+                          )}
+                          
+                          {/* 必填标记 */}
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={field.required}
+                              onChange={(e) => updateSchemaField(index, { required: e.target.checked })}
+                              className="mr-1 h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+                            />
+                            <span className="text-red-500 text-lg">*</span>
+                          </div>
+                          
+                          {/* 操作按钮 */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => addSchemaField(index)}
+                              className="p-1 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded"
+                              title="添加字段"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeSchemaField(index)}
+                              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                              title="删除字段"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                          {/* 字段名称 */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              字段名称
-                            </label>
-                            <input
-                              type="text"
-                              value={field.name}
-                              onChange={(e) => updateSchemaField(index, { name: e.target.value })}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                              placeholder="字段名称"
-                            />
-                          </div>
-
-                          {/* 字段类型 */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              字段类型
-                            </label>
-                            <select
-                              value={field.type}
-                              onChange={(e) => updateSchemaField(index, { type: e.target.value as SchemaField['type'] })}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                            >
-                              <option value="string">字符串(String)</option>
-                              <option value="number">数字(Number)</option>
-                              <option value="boolean">布尔值(Boolean)</option>
-                              <option value="object">对象(Object)</option>
-                              <option value="array">数组(Array)</option>
-                            </select>
-                          </div>
-                        </div>
-
                         {/* 字段描述 */}
-                        <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            字段描述（用于指导大模型提取）
-                          </label>
-                          <textarea
+                        <div className="ml-8">
+                          <input
+                            type="text"
                             value={field.description}
                             onChange={(e) => updateSchemaField(index, { description: e.target.value })}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                            rows={2}
-                            placeholder="描述该字段的含义和提取要求，例如：提取文档中的公司名称，应为完整的公司全称"
+                            className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-gray-50"
+                            placeholder="Field description"
                           />
                         </div>
+
+                        {/* Object类型的嵌套属性 */}
+                        {field.type === 'object' && !field.collapsed && (
+                          <div className="ml-8 space-y-2">
+                            {(field.properties || []).map((property, propIndex) => (
+                              <div key={propIndex} className="space-y-2">
+                                {/* 属性主行 */}
+                                <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-50">
+                                  {/* Object类型属性的折叠按钮 */}
+                                  {property.type === 'object' && (
+                                    <button
+                                      onClick={() => {
+                                        updateObjectProperty(index, propIndex, { 
+                                          collapsed: !property.collapsed 
+                                        });
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      {property.collapsed ? '▶' : '▼'}
+                                    </button>
+                                  )}
+                                  
+                                  <input
+                                    type="text"
+                                    value={property.name}
+                                    onChange={(e) => updateObjectProperty(index, propIndex, { name: e.target.value })}
+                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white"
+                                    placeholder="property"
+                                  />
+                                  <select
+                                    value={property.type}
+                                    onChange={(e) => {
+                                      const newType = e.target.value as SchemaField['type'];
+                                      const updates: Partial<SchemaField> = { type: newType };
+                                      
+                                      // 如果改为object类型且还没有properties，自动添加一个默认属性
+                                      if (newType === 'object' && !property.properties) {
+                                        updates.properties = [{
+                                          name: '',
+                                          type: 'string' as SchemaField['type'],
+                                          description: '',
+                                          required: true
+                                        }];
+                                      }
+                                      
+                                      // 如果改为非object类型，清除properties
+                                      if (newType !== 'object') {
+                                        updates.properties = undefined;
+                                      }
+                                      
+                                      updateObjectProperty(index, propIndex, updates);
+                                    }}
+                                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white min-w-[100px]"
+                                  >
+                                    <option value="string">String</option>
+                                    <option value="number">Number</option>
+                                    <option value="boolean">Boolean</option>
+                                    <option value="array">Array</option>
+                                    <option value="object">Object</option>
+                                  </select>
+                                  
+                                  {/* 数组元素类型 */}
+                                  {property.type === 'array' && (
+                                    <>
+                                      <span className="text-gray-400">/</span>
+                                      <select
+                                        value={property.itemType || 'string'}
+                                        onChange={(e) => updateObjectProperty(index, propIndex, { itemType: e.target.value as SchemaField['itemType'] })}
+                                        className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-blue-50 min-w-[100px]"
+                                      >
+                                        <option value="string">String</option>
+                                        <option value="number">Number</option>
+                                        <option value="boolean">Boolean</option>
+                                        <option value="object">Object</option>
+                                      </select>
+                                    </>
+                                  )}
+                                  
+                                  <div className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={property.required}
+                                      onChange={(e) => updateObjectProperty(index, propIndex, { required: e.target.checked })}
+                                      className="mr-1 h-3 w-3 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+                                    />
+                                    <span className="text-red-500">*</span>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => addObjectProperty(index)}
+                                    className="p-1 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded"
+                                    title="添加属性"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => removeObjectProperty(index, propIndex)}
+                                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                
+                                {/* 属性描述 */}
+                                <div className="ml-4">
+                                  <input
+                                    type="text"
+                                    value={property.description}
+                                    onChange={(e) => updateObjectProperty(index, propIndex, { description: e.target.value })}
+                                    className="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white"
+                                    placeholder="Property description"
+                                  />
+                                </div>
+                                
+                                {/* 递归渲染Object类型属性的嵌套属性 */}
+                                {property.type === 'object' && !property.collapsed && (
+                                  <div className="ml-4 space-y-2">
+                                    {(property.properties || []).map((nestedProp, nestedIndex) => (
+                                      <div key={nestedIndex} className="space-y-2">
+                                        {/* 嵌套属性主行 */}
+                                        <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-100">
+                                          {/* 嵌套Object的折叠按钮 */}
+                                          {nestedProp.type === 'object' && (
+                                            <button
+                                              onClick={() => {
+                                                const newProperties = [...(property.properties || [])];
+                                                newProperties[nestedIndex] = {
+                                                  ...newProperties[nestedIndex],
+                                                  collapsed: !newProperties[nestedIndex].collapsed
+                                                };
+                                                updateObjectProperty(index, propIndex, { properties: newProperties });
+                                              }}
+                                              className="text-gray-400 hover:text-gray-600"
+                                            >
+                                              {nestedProp.collapsed ? '▶' : '▼'}
+                                            </button>
+                                          )}
+                                          
+                                          <input
+                                            type="text"
+                                            value={nestedProp.name}
+                                            onChange={(e) => {
+                                              const newProperties = [...(property.properties || [])];
+                                              newProperties[nestedIndex] = {
+                                                ...newProperties[nestedIndex],
+                                                name: e.target.value
+                                              };
+                                              updateObjectProperty(index, propIndex, { properties: newProperties });
+                                            }}
+                                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white"
+                                            placeholder="nested property"
+                                          />
+                                          <select
+                                            value={nestedProp.type}
+                                            onChange={(e) => {
+                                              const newType = e.target.value as SchemaField['type'];
+                                              const newProperties = [...(property.properties || [])];
+                                              const updates: Partial<SchemaField> = { type: newType };
+                                              
+                                              // 如果改为object类型且还没有properties，自动添加一个默认属性
+                                              if (newType === 'object' && !nestedProp.properties) {
+                                                updates.properties = [{
+                                                  name: '',
+                                                  type: 'string' as SchemaField['type'],
+                                                  description: '',
+                                                  required: true
+                                                }];
+                                              }
+                                              
+                                              // 如果改为非object类型，清除properties
+                                              if (newType !== 'object') {
+                                                updates.properties = undefined;
+                                              }
+                                              
+                                              newProperties[nestedIndex] = {
+                                                ...newProperties[nestedIndex],
+                                                ...updates
+                                              };
+                                              updateObjectProperty(index, propIndex, { properties: newProperties });
+                                            }}
+                                            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white min-w-[80px]"
+                                          >
+                                            <option value="string">String</option>
+                                            <option value="number">Number</option>
+                                            <option value="boolean">Boolean</option>
+                                            <option value="array">Array</option>
+                                            <option value="object">Object</option>
+                                          </select>
+                                          
+                                          {/* 嵌套数组元素类型 */}
+                                          {nestedProp.type === 'array' && (
+                                            <>
+                                              <span className="text-gray-400">/</span>
+                                              <select
+                                                value={nestedProp.itemType || 'string'}
+                                                onChange={(e) => {
+                                                  const newProperties = [...(property.properties || [])];
+                                                  newProperties[nestedIndex] = {
+                                                    ...newProperties[nestedIndex],
+                                                    itemType: e.target.value as SchemaField['itemType']
+                                                  };
+                                                  updateObjectProperty(index, propIndex, { properties: newProperties });
+                                                }}
+                                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-blue-50 min-w-[80px]"
+                                              >
+                                                <option value="string">String</option>
+                                                <option value="number">Number</option>
+                                                <option value="boolean">Boolean</option>
+                                                <option value="object">Object</option>
+                                              </select>
+                                            </>
+                                          )}
+                                          
+                                          <div className="flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={nestedProp.required}
+                                              onChange={(e) => {
+                                                const newProperties = [...(property.properties || [])];
+                                                newProperties[nestedIndex] = {
+                                                  ...newProperties[nestedIndex],
+                                                  required: e.target.checked
+                                                };
+                                                updateObjectProperty(index, propIndex, { properties: newProperties });
+                                              }}
+                                              className="mr-1 h-3 w-3 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+                                            />
+                                            <span className="text-red-500">*</span>
+                                          </div>
+                                          
+                                          <button
+                                            onClick={() => {
+                                              const newProperties = [...(property.properties || [])];
+                                              newProperties.push({
+                                                name: '',
+                                                type: 'string' as SchemaField['type'],
+                                                description: '',
+                                                required: false
+                                              });
+                                              updateObjectProperty(index, propIndex, { properties: newProperties });
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded"
+                                            title="添加嵌套属性"
+                                          >
+                                            <Plus className="w-3 h-3" />
+                                          </button>
+                                          
+                                          <button
+                                            onClick={() => {
+                                              const newProperties = [...(property.properties || [])];
+                                              newProperties.splice(nestedIndex, 1);
+                                              updateObjectProperty(index, propIndex, { properties: newProperties });
+                                            }}
+                                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                        
+                                        {/* 嵌套属性描述 */}
+                                        <div className="ml-4">
+                                          <input
+                                            type="text"
+                                            value={nestedProp.description}
+                                            onChange={(e) => {
+                                              const newProperties = [...(property.properties || [])];
+                                              newProperties[nestedIndex] = {
+                                                ...newProperties[nestedIndex],
+                                                description: e.target.value
+                                              };
+                                              updateObjectProperty(index, propIndex, { properties: newProperties });
+                                            }}
+                                            className="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 bg-white"
+                                            placeholder="Nested property description"
+                                          />
+                                        </div>
+                                        
+                                        {/* 这里可以继续递归，但为了简化先支持二级嵌套 */}
+                                        {nestedProp.type === 'object' && !nestedProp.collapsed && (
+                                          <div className="ml-4 p-2 border border-dashed border-gray-300 rounded text-center text-gray-500 text-sm">
+                                            继续嵌套功能开发中...
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                    
+                                    {/* 为Object类型属性添加嵌套属性的按钮 */}
+                                    {(!property.properties || property.properties.length === 0) && (
+                                      <div className="flex justify-end">
+                                        <button
+                                          onClick={() => {
+                                            updateObjectProperty(index, propIndex, { 
+                                              properties: [{
+                                                name: '',
+                                                type: 'string' as SchemaField['type'],
+                                                description: '',
+                                                required: false
+                                              }]
+                                            });
+                                          }}
+                                          className="flex items-center gap-2 px-3 py-2 text-sm text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded border border-dashed border-cyan-300"
+                                        >
+                                          <Plus className="w-4 h-4" />
+                                          Add nested property
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            
+                            {/* 如果没有属性，显示添加第一个属性的按钮 */}
+                            {(!field.properties || field.properties.length === 0) && (
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => addObjectProperty(index)}
+                                  className="flex items-center gap-2 px-3 py-2 text-sm text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded border border-dashed border-cyan-300"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Add property
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
 
+                    {/* 空状态 */}
                     {currentInfoExtractConfig.schema.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <p className="text-sm">暂无Schema字段</p>
-                        <p className="text-xs mt-1">点击"添加字段"开始配置</p>
+                      <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                        <button
+                          onClick={() => addSchemaField()}
+                          className="flex items-center gap-2 px-4 py-2 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded border border-dashed border-cyan-300 mx-auto"
+                        >
+                          <Plus className="w-5 h-5" />
+                          添加字段
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1979,7 +2659,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
                   </div>
                   <div className="mb-2">
                     <p className="text-xs text-gray-500">
-                      请输入标准的JSON Schema格式，所有字段默认为必填
+                      请输入标准的JSON Schema格式，使用"required"数组指定必填字段
                     </p>
                   </div>
                   <textarea
@@ -1999,8 +2679,31 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
   "amount": {
     "type": "number",
     "description": "提取合同金额"
+  },
+  "keywords": {
+    "type": "array",
+    "items": {
+      "type": "string"
+    },
+    "description": "提取文档中的关键词列表"
+  },
+  "contact_info": {
+    "type": "object",
+    "properties": {
+      "phone": {
+        "type": "string",
+        "description": "联系电话"
+      },
+      "email": {
+        "type": "string",
+        "description": "邮箱地址"
+      }
+    },
+    "required": ["phone"],
+    "description": "联系信息"
   }
-}
+},
+"required": ["company_name", "amount"]
 }`}
                   />
                   {jsonError && (
@@ -2032,6 +2735,258 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
         </div>
       )}
 
+      {/* Python节点配置弹窗 */}
+      {showPythonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-[800px] max-h-[80vh] overflow-hidden">
+            {/* 弹窗头部 */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">配置Python自定义节点</h2>
+              <button
+                onClick={() => setShowPythonModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 弹窗内容 */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {/* 节点名称 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  节点名称
+                </label>
+                <input
+                  type="text"
+                  value={currentPythonConfig.nodeName}
+                  onChange={(e) => setCurrentPythonConfig(prev => ({
+                    ...prev,
+                    nodeName: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  placeholder="请输入节点名称"
+                />
+              </div>
+
+              {/* 输入值 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  输入值
+                </label>
+                <input
+                  type="text"
+                  value={currentPythonConfig.inputValue}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  disabled
+                />
+              </div>
+
+              {/* 返回值 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  返回值
+                </label>
+                <input
+                  type="text"
+                  value={currentPythonConfig.outputValue}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  disabled
+                />
+              </div>
+
+              {/* 文档说明 */}
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-700">
+                  不同上下游documents参数内容有所区别，详情参考文档{' '}
+                  <a 
+                    href="#" 
+                    className="text-blue-600 hover:text-blue-800 underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    python自定义节点
+                  </a>
+                </p>
+              </div>
+
+              {/* Python脚本编辑框 */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Python脚本
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setIsPythonFullscreen(true)}
+                      className="flex items-center px-2 py-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                      title="全屏编辑"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                    <label className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded cursor-pointer hover:bg-yellow-200 transition-colors">
+                      <Upload className="w-4 h-4 mr-1" />
+                      载入脚本内容
+                      <input
+                        type="file"
+                        accept=".py"
+                        onChange={handlePythonScriptUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+                <textarea
+                  value={currentPythonConfig.pythonScript}
+                  onChange={(e) => setCurrentPythonConfig(prev => ({
+                    ...prev,
+                    pythonScript: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none font-mono text-sm"
+                  rows={12}
+                  placeholder={`# 请输入Python脚本或上传.py文件
+# 函数定义示例：
+def process_documents(documents):
+    """
+    处理文档的自定义函数
+    
+    Args:
+        documents: 输入的文档数据
+        
+    Returns:
+        documents: 处理后的文档数据
+    """
+    # 在这里编写您的处理逻辑
+    processed_documents = documents
+    
+    return processed_documents`}
+                />
+              </div>
+            </div>
+
+            {/* 弹窗底部 */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowPythonModal(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={savePythonConfig}
+                className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+              >
+                <Save className="w-4 h-4 mr-1" />
+                保存配置
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Python脚本全屏编辑弹窗 */}
+      {isPythonFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-[90vw] h-[90vh] max-w-6xl overflow-hidden flex flex-col">
+            {/* 弹窗头部 */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Python脚本编辑 - 全屏编辑</h2>
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded cursor-pointer hover:bg-yellow-200 transition-colors">
+                  <Upload className="w-4 h-4 mr-1" />
+                  载入脚本内容
+                  <input
+                    type="file"
+                    accept=".py"
+                    onChange={handlePythonScriptUpload}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  onClick={() => setIsPythonFullscreen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  title="关闭全屏"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 弹窗内容 */}
+            <div className="flex-1 p-4 overflow-hidden flex flex-col">
+              <div className="mb-3">
+                <p className="text-sm text-gray-500">
+                  请输入Python脚本代码，确保包含处理documents参数的函数
+                </p>
+              </div>
+              <div className="flex-1 flex flex-col">
+                <textarea
+                  value={currentPythonConfig.pythonScript}
+                  onChange={(e) => setCurrentPythonConfig(prev => ({
+                    ...prev,
+                    pythonScript: e.target.value
+                  }))}
+                  className="w-full h-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none font-mono text-sm"
+                  placeholder={`# 请输入Python脚本或上传.py文件
+# 函数定义示例：
+def process_documents(documents):
+    """
+    处理文档的自定义函数
+    
+    Args:
+        documents: 输入的文档数据
+        
+    Returns:
+        documents: 处理后的文档数据
+    """
+    # 在这里编写您的处理逻辑
+    processed_documents = documents
+    
+    # 示例：过滤文档
+    # filtered_documents = [doc for doc in documents if some_condition(doc)]
+    
+    # 示例：转换文档格式
+    # for doc in processed_documents:
+    #     doc['processed'] = True
+    #     doc['timestamp'] = datetime.now()
+    
+    # 示例：数据清洗
+    # processed_documents = clean_data(documents)
+    
+    # 示例：数据增强
+    # processed_documents = enhance_data(documents)
+    
+    return processed_documents
+
+# 您可以定义多个辅助函数
+def helper_function(data):
+    """
+    辅助函数示例
+    """
+    return data
+
+# 导入常用库（系统会自动处理依赖）
+# import pandas as pd
+# import numpy as np
+# import json
+# from datetime import datetime`}
+                />
+              </div>
+            </div>
+
+            {/* 弹窗底部 */}
+            <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-200">
+              <button
+                onClick={() => setIsPythonFullscreen(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                完成编辑
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* JSON全屏编辑弹窗 */}
       {isJsonFullscreen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2056,7 +3011,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
             <div className="flex-1 p-4 overflow-hidden flex flex-col">
               <div className="mb-3">
                 <p className="text-sm text-gray-500">
-                  请输入标准的JSON Schema格式，所有字段默认为必填
+                  请输入标准的JSON Schema格式，使用"required"数组指定必填字段
                 </p>
               </div>
               <div className="flex-1 flex flex-col">
@@ -2067,17 +3022,40 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({ onBack }) => {
                     jsonError ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder={`{
-  "type": "object",
-  "properties": {
-    "company_name": {
-      "type": "string",
-      "description": "提取文档中的公司名称"
+"type": "object",
+"properties": {
+  "company_name": {
+    "type": "string",
+    "description": "提取文档中的公司名称"
+  },
+  "amount": {
+    "type": "number",
+    "description": "提取合同金额"
+  },
+  "keywords": {
+    "type": "array",
+    "items": {
+      "type": "string"
     },
-    "amount": {
-      "type": "number",
-      "description": "提取合同金额"
-    }
+    "description": "提取文档中的关键词列表"
+  },
+  "contact_info": {
+    "type": "object",
+    "properties": {
+      "phone": {
+        "type": "string",
+        "description": "联系电话"
+      },
+      "email": {
+        "type": "string",
+        "description": "邮箱地址"
+      }
+    },
+    "required": ["phone"],
+    "description": "联系信息"
   }
+},
+"required": ["company_name", "amount"]
 }`}
                 />
                 {jsonError && (

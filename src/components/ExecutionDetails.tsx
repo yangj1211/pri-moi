@@ -1128,7 +1128,7 @@ const ExecutionDetails: React.FC = () => {
                   </td>
                 </tr>
                 
-                {/* 展开的节点详情行 */}
+                {/* 展开的节点配置行 */}
                 {expandedFiles.includes(file.fileId) && (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 bg-gray-50">
